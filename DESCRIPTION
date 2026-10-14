@@ -1,0 +1,19 @@
+Package: yspecx
+Title: yspecx: An extension of yspec for validation of data specifications
+Version: 0.1.0
+Authors@R: 
+    person("Omar", "Elashkar", , "omar.i.elashkar@gmail.com", role = c("aut", "cre"))
+Description: 
+    yspecx is an extension of yspec for validation of data specifications.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports: 
+    yaml,
+    yspec
+Remotes:
+    github::metrumresearchgroup/yspec@v0.8.1
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0

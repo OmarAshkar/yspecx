@@ -1,3 +1,3 @@
-# yspecx (development version)
+# yspecx (0.1.0)
 
-* Initial CRAN submission.
+- (feat) `df_to_yspec()`: Convert a data frame to a yspec specification file
