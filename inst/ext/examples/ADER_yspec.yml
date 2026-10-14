@@ -1,0 +1,239 @@
+SETUP__:
+  description: Population PKPD analysis data set
+  missing_code: -999
+
+STUDYID:
+  type: character
+  long: Study Identifier
+
+USUBJID:
+  type: character
+  long: Unique Subject Identifier
+  dots: {group: true, anymissing: false}
+
+FLAGA:
+  type: character
+  long: Flag A
+
+FLAGB:
+  type: character
+  long: Flag B
+
+GRPA:
+  type: character
+  long: Group A
+
+ARM:
+  type: character
+  long: Description of Planned Arm
+
+ACTARM:
+  type: character
+  long: Description of Actual Arm
+
+AGE:
+  type: numeric
+  unit: years
+  long: Age
+  dots: {time_varying: false}
+
+SEX:
+  type: character
+  long: Sex
+  dots: {time_varying: false, anymissing: false}
+
+
+RACE:
+  type: character
+  long: Race
+  dots: {time_varying: false}
+
+
+ETHNIC:
+  type: character
+  long: Ethnicity
+  dots: {time_varying: false}
+
+REGION:
+  type: character
+  long: Geographical Region
+  dots: {time_varying: false}
+
+CVA1:
+  type: numeric
+  unit: kg
+  long: Baseline Covariate A1
+  dots: {time_varying: false}
+
+CVB1:
+  type: numeric
+  unit: U/L
+  long: Baseline Covariate B1
+  dots: {time_varying: false}
+
+CVC1:
+  type: numeric
+  unit: g/L
+  long: Baseline Covariate C1
+  dots: {time_varying: false}
+
+CVD1:
+  type: numeric
+  unit: g/L
+  long: Baseline Covariate D1
+  dots: {time_varying: false}
+
+CVE1:
+  type: numeric
+  long: Baseline Covariate E1
+  dots: {time_varying: false}
+
+CVF1:
+  type: numeric
+  long: Baseline Covariate F1
+  dots: {time_varying: false}
+
+CVG1:
+  type: character
+  long: Baseline Covariate G1
+  dots: {time_varying: false}
+
+CVH1:
+  type: numeric
+  unit: mm
+  long: Baseline Covariate H1
+  dots: {time_varying: false}
+
+CVI1:
+  type: character
+  long: Baseline Covariate I1
+  dots: {time_varying: false}
+
+CVJ1:
+  type: character
+  long: Baseline Covariate J1
+  dots: {time_varying: false}
+
+CVK1:
+  type: character
+  long: Baseline Covariate K1
+  dots: {time_varying: false}
+
+CVL1:
+  type: numeric
+  long: Baseline Covariate L1
+
+CVM1:
+  type: character
+  long: Baseline Covariate M1
+
+CVN1:
+  type: character
+  long: Baseline Covariate N1
+
+CVO1:
+  type: character
+  long: Baseline Covariate O1
+
+FLAGC:
+  type: character
+  long: Flag C
+
+FLAGD:
+  type: character
+  long: Flag D
+
+DTA1:
+  type: character
+  long: Date A1
+
+DTA2:
+  type: character
+  long: Date A2
+
+DURA:
+  type: numeric
+  unit: days
+  long: Duration A
+
+PARAM:
+  type: character
+  long: Parameter
+
+PARAMCD:
+  type: character
+  long: Parameter Code
+
+PARAMN:
+  type: numeric
+  long: Parameter Number
+
+AVAL:
+  type: numeric
+  long: Analysis Value
+
+AVALC:
+  type: character
+  long: Analysis Value Character
+
+CNSR:
+  type: numeric
+  long: Censor
+
+DTB1:
+  type: character
+  long: Date B1
+
+DTB2:
+  type: character
+  long: Date B2
+
+DYB1:
+  type: numeric
+  unit: days
+  long: Relative Day B1
+
+DYB2:
+  type: numeric
+  unit: days
+  long: Relative Day B2
+
+ID:
+  type: numeric
+  long: Modeling ID
+  dots: {group: true}
+
+EXA0:
+  type: numeric
+  unit: ng/mL
+  long: Exposure Metric A0
+
+EXA1:
+  type: numeric
+  unit: ng/mL
+  long: Exposure Metric A1
+
+EXB1:
+  type: numeric
+  unit: ng/mL
+  long: Exposure Metric B1
+
+EXC1:
+  type: numeric
+  unit: ng/mL
+  long: Exposure Metric C1
+
+EXA2:
+  type: numeric
+  unit: ng/mL
+  long: Exposure Metric A2
+
+EXB2:
+  type: numeric
+  unit: ng/mL
+  long: Exposure Metric B2
+
+EXC2:
+  type: numeric
+  unit: ng/mL
+  long: Exposure Metric C2
