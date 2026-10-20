@@ -9,17 +9,32 @@
 #' @param output name of the output yspec file
 #' @param varcodelist column containing coded values (comma- or newline-separated)
 #' @param codelist_func function taking a codelist string and returning a named list of codes
-#' 
+#'
 #' @importFrom yspec ys_load get_meta
 #' @importFrom yaml write_yaml
 #' @author Omar I. Elashkar
 #' @export
-df_to_yspec <- function(x, desc = "", projectid = "", varname, vardesc = NULL, varunit = NULL, vartype = NULL, output = "yspec.yaml", varcodelist = NULL, codelist_func = parse_yspec_codelist) {
+df_to_yspec <- function(
+  x,
+  desc = "",
+  projectid = "",
+  varname,
+  vardesc = NULL,
+  varunit = NULL,
+  vartype = NULL,
+  output = "yspec.yaml",
+  varcodelist = NULL,
+  codelist_func = parse_yspec_codelist
+) {
   stopifnot(is.data.frame(x))
-  stopifnot(all(c(varname, vardesc, varunit, vartype, varcodelist) %in% colnames(x)))
+  stopifnot(all(
+    c(varname, vardesc, varunit, vartype, varcodelist) %in% colnames(x)
+  ))
   stopifnot(grepl("\\.yaml$", output))
-  if (!is.null(varcodelist)) stopifnot(is.function(codelist_func))
-  
+  if (!is.null(varcodelist)) {
+    stopifnot(is.function(codelist_func))
+  }
+
   # Create the YAML structure
   yspec_list <- list(
     SETUP__ = list(
@@ -27,21 +42,23 @@ df_to_yspec <- function(x, desc = "", projectid = "", varname, vardesc = NULL, v
       projectnumber = projectid
     )
   )
-  
+
   # Add variables as top-level keys
   for (i in seq_len(nrow(x))) {
     variable <- list()
-    
+
     # Define fields and their corresponding column names
     fields <- list(
       long = vardesc,
       unit = varunit,
       type = vartype
     )
-    
+
     # Dynamically add fields if they are not NA or "N/A"
     for (field_name in names(fields)) {
-      if (is.null(fields[[field_name]])) next
+      if (is.null(fields[[field_name]])) {
+        next
+      }
       field_value <- x[[fields[[field_name]]]][i]
       if (!is.na(field_value) && field_value != "N/A") {
         variable[[field_name]] <- field_value
@@ -53,11 +70,11 @@ df_to_yspec <- function(x, desc = "", projectid = "", varname, vardesc = NULL, v
         variable$values <- codelist_func(codelist)
       }
     }
-    
+
     # Add the variable to the YAML structure
     yspec_list[[x[[varname]][i]]] <- variable
   }
-  
+
   # Write to YAML file
   yaml::write_yaml(yspec_list, output)
   message("YAML file created: ", output)
@@ -84,5 +101,29 @@ parse_yspec_codelist <- function(text) {
     label <- if (code_first) parts[2] else parts[1]
     list(label = label, code = type.convert(code, as.is = TRUE))
   })
-  stats::setNames(lapply(values, `[[`, "code"), vapply(values, `[[`, "", "label"))
+  stats::setNames(
+    lapply(values, `[[`, "code"),
+    vapply(values, `[[`, "", "label")
+  )
+}
+
+
+#' Sort specification variables to match a data frame
+#'
+#' @param data A data frame whose column order determines the variable order.
+#' @param spec A loaded yspec object, as returned by [yspec::ys_load()].
+#' @return A yspec object with matching variables in data frame column order.
+#'   Specification variables absent from `data` follow in their original order.
+#'   Data columns absent from `spec` are ignored. Metadata is preserved.
+#' @export
+ys_sort_spec_vars <- function(data, spec) {
+  stopifnot(is.data.frame(data), inherits(spec, "yspec"))
+  vars <- c(
+    intersect(names(data), names(spec)),
+    setdiff(names(spec), names(data))
+  )
+  sorted <- spec[vars]
+  attributes(sorted) <- attributes(spec)
+  names(sorted) <- vars
+  sorted
 }

@@ -1,0 +1,18 @@
+SETUP__:
+  description: Unordered variable specification
+  projectnumber: SORT001
+WEIGHT:
+  long: Body weight
+  type: numeric
+  unit: kg
+SEX:
+  long: Sex
+  type: character
+  values: {Female: F, Male: M}
+AGE:
+  long: Age
+  type: numeric
+  unit: years
+ID:
+  long: Subject identifier
+  type: numeric
