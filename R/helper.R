@@ -127,3 +127,85 @@ ys_sort_spec_vars <- function(data, spec) {
   names(sorted) <- vars
   sorted
 }
+
+#' Write a yspec object to a YAML file
+#'
+#' Writes a standalone specification using YAML input fields rather than loaded
+#' object internals. Lookup and import results are materialized; their original
+#' file references and loader provenance are not written. Control settings are
+#' flattened into `SETUP__`. Variable order, namespaces and coded-value labels
+#' are preserved, but comments and YAML formatting are not.
+#'
+#' @param x A yspec object, as returned by [yspec::ys_load()].
+#' @param path Path to the output YAML file.
+#' @importFrom yaml write_yaml
+#' @importFrom yspec get_meta
+#' @author Omar I. Elashkar
+#' @export
+ys_write <- function(x, path) {
+  stopifnot(inherits(x, "yspec"))
+  stopifnot(grepl("\\.yaml$", path))
+  meta <- yspec::get_meta(x)
+  setup_fields <- c(
+    "description",
+    "projectnumber",
+    "sponsor",
+    "data_path",
+    "data_stem",
+    "name",
+    "comment",
+    "comment_col",
+    "glue",
+    "primary_key",
+    "flags",
+    "max_nchar_label",
+    "max_nchar_short",
+    "max_nchar_col",
+    "ys_document_namespace",
+    "missing_code"
+  )
+  # Loaded control settings use a different layout than YAML input.
+  for (field in names(meta$control)) {
+    meta[[field]] <- meta$control[[field]]
+  }
+  meta <- meta[intersect(names(meta), setup_fields)]
+  meta <- meta[lengths(meta) > 0L]
+  column_fields <- c(
+    "type",
+    "unit",
+    "values",
+    "decode",
+    "source",
+    "comment",
+    "short",
+    "long",
+    "about",
+    "dots",
+    "range",
+    "longvalues",
+    "lookup",
+    "axis",
+    "table",
+    "label",
+    "make_factor",
+    "namespace"
+  )
+  columns <- lapply(as.list(x), function(column) {
+    column <- column[sub("\\..*$", "", names(column)) %in% column_fields]
+    # Lookup/import results are materialized, so the output is standalone.
+    column$lookup <- FALSE
+    column
+  })
+  yspec_list <- c(list(SETUP__ = meta), columns)
+  as_yaml <- function(value) {
+    # Named atomic vectors must be mappings, not sequences that lose labels.
+    if (is.atomic(value) && !is.null(names(value))) {
+      value <- as.list(value)
+    }
+    if (is.list(value)) {
+      value <- lapply(value, as_yaml)
+    }
+    value
+  }
+  yaml::write_yaml(as_yaml(yspec_list), path)
+}
