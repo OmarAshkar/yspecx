@@ -2,6 +2,7 @@
 
 export(df_to_yspec)
 export(ys_checkx)
+export(ys_plt_relab)
 export(ys_sort_spec_vars)
 export(ys_write)
 importFrom(yaml,write_yaml)

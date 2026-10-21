@@ -9,6 +9,8 @@ License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports: 
+    ggplot2,
+    rlang,
     yaml,
     yspec (>= 0.8.1)
 Remotes:
