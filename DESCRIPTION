@@ -16,6 +16,9 @@ Imports:
 Remotes:
     github::metrumresearchgroup/yspec
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0

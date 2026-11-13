@@ -1,0 +1,14 @@
+SETUP__:
+  description: Factor ordering examples
+FIRST:
+  values: {One: 1, Two: 2, Three: 3, Unused: 4}
+  dots: {order: first}
+BIGGEST:
+  values: {One: 1, Two: 2, Three: 3, Unused: 4}
+  dots: {order: biggest}
+DEFAULT:
+  values: {One: 1, Two: 2, Three: 3, Unused: 4}
+TEXT:
+  type: character
+  make_factor: true
+  dots: {order: biggest}
