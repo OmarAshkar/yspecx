@@ -15,7 +15,7 @@
 #' @return Invisibly, `TRUE` if all checks pass; otherwise an error is raised,
 #'   or `FALSE` is returned when `error_on_fail = FALSE`.
 #' @export
-ys_checkx <- function(data, spec, verbose = FALSE, output = tempfile(),
+ysx_check <- function(data, spec, verbose = FALSE, output = tempfile(),
                       error_on_fail = TRUE) {
   base_ok <- yspec::ys_check(
     data, spec,

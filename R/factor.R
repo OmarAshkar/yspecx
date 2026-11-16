@@ -14,7 +14,7 @@
 #' @inheritParams yspec::ys_factors
 #' @return The data frame with selected columns converted to factors.
 #' @export
-ysx_factor <- function(data, spec, ..., .keep_values = TRUE, .suffix = "_v") {
+ysx_factors <- function(data, spec, ..., .keep_values = TRUE, .suffix = "_v") {
   result <- yspec::ys_factors(
     data,
     spec,

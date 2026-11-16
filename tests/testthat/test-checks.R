@@ -45,15 +45,15 @@ modified_spec <- function(col, dots) {
 test_that("clean data passes all checks", {
   spec <- load_test_spec()
   data <- make_data(spec)
-  expect_true(suppressMessages(ys_checkx(data, spec)))
+  expect_true(suppressMessages(ysx_check(data, spec)))
 })
 
 test_that("base ys_check failures are still reported", {
   spec <- load_test_spec()
   data <- make_data(spec)
   data$EXTRA <- 1
-  expect_false(suppressMessages(ys_checkx(data, spec, error_on_fail = FALSE)))
-  expect_error(suppressMessages(ys_checkx(data, spec)), "review messages")
+  expect_false(suppressMessages(ysx_check(data, spec, error_on_fail = FALSE)))
+  expect_error(suppressMessages(ysx_check(data, spec)), "review messages")
 })
 
 test_that("NA is an error when missing_code is not NA", {
@@ -62,18 +62,18 @@ test_that("NA is an error when missing_code is not NA", {
   data <- make_data(spec)
   data$CVA1[1:3] <- NA
   expect_message(
-    res <- ys_checkx(data, spec, error_on_fail = FALSE),
+    res <- ysx_check(data, spec, error_on_fail = FALSE),
     "CVA1.*coded NA"
   )
   expect_false(res)
-  expect_error(suppressMessages(ys_checkx(data, spec)), "review messages")
+  expect_error(suppressMessages(ysx_check(data, spec)), "review messages")
 })
 
 test_that("missing_code values are accepted", {
   spec <- load_test_spec()
   data <- make_data(spec)
   data$CVA1[1:3] <- -999
-  expect_true(suppressMessages(ys_checkx(data, spec)))
+  expect_true(suppressMessages(ysx_check(data, spec)))
 })
 
 test_that("anymissing = false rejects NA and missing_code", {
@@ -81,7 +81,7 @@ test_that("anymissing = false rejects NA and missing_code", {
   data <- make_data(spec)
   data$SEX[1:3] <- "-999"
   expect_message(
-    res <- ys_checkx(data, spec, error_on_fail = FALSE),
+    res <- ysx_check(data, spec, error_on_fail = FALSE),
     "SEX: anymissing is false"
   )
   expect_false(res)
@@ -95,10 +95,10 @@ test_that("missing_code defaults to NA", {
   data <- make_data(spec)
 
   data$CVA1[1:3] <- NA
-  expect_true(suppressMessages(ys_checkx(data, spec)))
+  expect_true(suppressMessages(ysx_check(data, spec)))
 
   data$SEX[1:3] <- NA
-  expect_false(suppressMessages(ys_checkx(data, spec, error_on_fail = FALSE)))
+  expect_false(suppressMessages(ysx_check(data, spec, error_on_fail = FALSE)))
 })
 
 test_that("subject-level column that varies within group is an error", {
@@ -106,7 +106,7 @@ test_that("subject-level column that varies within group is an error", {
   data <- make_data(spec)
   data$AGE[2] <- data$AGE[2] + 1
   expect_message(
-    res <- ys_checkx(data, spec, error_on_fail = FALSE),
+    res <- ysx_check(data, spec, error_on_fail = FALSE),
     "AGE: declared subject-level"
   )
   expect_false(res)
@@ -118,7 +118,7 @@ test_that("time_varying defaults to false", {
   # CVB1 has no dots in the spec
   data$CVB1[2] <- data$CVB1[2] + 1
   expect_message(
-    ys_checkx(data, spec, error_on_fail = FALSE),
+    ysx_check(data, spec, error_on_fail = FALSE),
     "CVB1: declared subject-level"
   )
 })
@@ -127,13 +127,13 @@ test_that("time_varying column constant within every group is an error", {
   spec <- modified_spec("AGE", "{time_varying: true}")
   data <- make_data(spec)
   expect_message(
-    res <- ys_checkx(data, spec, error_on_fail = FALSE),
+    res <- ysx_check(data, spec, error_on_fail = FALSE),
     "AGE: declared time_varying"
   )
   expect_false(res)
 
   data$AGE[2] <- data$AGE[2] + 1
-  expect_true(suppressMessages(ys_checkx(data, spec)))
+  expect_true(suppressMessages(ysx_check(data, spec)))
 })
 
 test_that("group check is skipped when no group columns exist", {
@@ -143,5 +143,5 @@ test_that("group check is skipped when no group columns exist", {
   spec <- load_test_spec(f)
   data <- make_data(spec)
   data$AGE[2] <- data$AGE[2] + 1
-  expect_true(suppressMessages(ys_checkx(data, spec)))
+  expect_true(suppressMessages(ysx_check(data, spec)))
 })

@@ -1,8 +1,8 @@
 ---
-title: "Factor ordering with ysx_factor"
+title: "Factor ordering with ysx_factors"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Factor ordering with ysx_factor}
+  %\VignetteIndexEntry{Factor ordering with ysx_factors}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,7 +11,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", error = FALSE)
 ```
 
-`ysx_factor()` extends `yspec::ys_factors()` with per-variable ordering through
+`ysx_factors()` extends `yspec::ys_factors()` with per-variable ordering through
 `dots$order`. It converts coded values to labelled factors while retaining the
 original values in columns ending in `_v` by default.
 
@@ -58,7 +58,7 @@ data <- data.frame(ID = seq_len(7), RESPONSE = c(3, 2, 2, 3, 2, 1, NA))
 data. Here `High` appears first in the data, but `Low` is the first factor level.
 
 ```{r first}
-first <- ysx_factor(data, spec)
+first <- ysx_factors(data, spec)
 levels(first$RESPONSE)
 head(first)
 ```
@@ -69,7 +69,7 @@ Change the setting in the YAML file, or update the loaded specification:
 
 ```{r biggest}
 spec$RESPONSE$dots$order <- "biggest"
-biggest <- ysx_factor(data, spec)
+biggest <- ysx_factors(data, spec)
 levels(biggest$RESPONSE)
 table(biggest$RESPONSE, useNA = "ifany")
 ```
@@ -83,7 +83,7 @@ Frequencies are calculated from the data supplied to each call. If levels have
 equal counts, their relative order follows the original yspec factor order.
 
 ```{r ties}
-tied <- ysx_factor(data.frame(RESPONSE = c(3, 2)), spec)
+tied <- ysx_factors(data.frame(RESPONSE = c(3, 2)), spec)
 levels(tied$RESPONSE)
 ```
 
@@ -98,21 +98,21 @@ Pass unquoted column names to restrict conversion. Use `.keep_values = FALSE`
 to omit the original codes, or `.suffix` to choose their column suffix.
 
 ```{r options}
-selected <- ysx_factor(data, spec, RESPONSE, .keep_values = FALSE)
+selected <- ysx_factors(data, spec, RESPONSE, .keep_values = FALSE)
 names(selected)
 
-with_codes <- ysx_factor(data, spec, RESPONSE, .suffix = "_code")
+with_codes <- ysx_factors(data, spec, RESPONSE, .suffix = "_code")
 head(with_codes)
 ```
 
 ## Existing factors and validation
 
 Existing factor columns are left unchanged, including their level order. To
-change the ordering after a previous conversion, call `ysx_factor()` on the
+change the ordering after a previous conversion, call `ysx_factors()` on the
 original coded data rather than the factor output.
 
 ```{r existing-factors}
-unchanged <- ysx_factor(first, spec)
+unchanged <- ysx_factors(first, spec)
 identical(levels(unchanged$RESPONSE), levels(first$RESPONSE))
 ```
 
