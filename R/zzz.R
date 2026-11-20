@@ -1,5 +1,16 @@
 .onLoad <- function(libname, pkgname) {
-  extend_yspec_setup_names("missing_code")
+  # A yspec change must not stop yspecx from loading; yspec only warns without it.
+  tryCatch(
+    extend_yspec_setup_names("missing_code"),
+    error = function(e) {
+      warning(
+        "yspecx could not register 'missing_code' with yspec (",
+        conditionMessage(e),
+        "). yspec may warn about it in SETUP__.",
+        call. = FALSE
+      )
+    }
+  )
 }
 
 # yspec validates SETUP__ keys against an internal, locked constant.

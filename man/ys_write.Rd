@@ -9,7 +9,7 @@ ys_write(x, path)
 \arguments{
 \item{x}{A yspec object, as returned by \code{\link[yspec:ys_load]{yspec::ys_load()}}.}
 
-\item{path}{Path to the output YAML file.}
+\item{path}{Path to the output YAML file, ending in \code{.yaml} or \code{.yml}.}
 }
 \description{
 Writes a standalone specification using YAML input fields rather than loaded

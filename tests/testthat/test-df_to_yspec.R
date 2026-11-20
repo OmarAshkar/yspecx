@@ -142,3 +142,35 @@ test_that("df_to_yspec accepts a custom codelist parser", {
 
   expect_equal(yspec::ys_load(output_path)$FINISH$values[["GLOSS"]], 2L)
 })
+
+test_that("df_to_yspec stops on duplicate variable names", {
+  dup <- data.frame(
+    varname = c("AGE", "SEX", "AGE"),
+    vardesc = c("Age at screening", "Sex", "Age at baseline")
+  )
+  expect_snapshot(
+    error = TRUE,
+    df_to_yspec(
+      dup,
+      varname = "varname",
+      vardesc = "vardesc",
+      output = tempfile(fileext = ".yaml")
+    )
+  )
+})
+
+test_that("df_to_yspec accepts .yml and rejects other extensions", {
+  one <- data.frame(varname = "AGE", vardesc = "Age")
+  out <- tempfile(fileext = ".yml")
+  suppressMessages(
+    df_to_yspec(one, varname = "varname", vardesc = "vardesc", output = out)
+  )
+  expect_identical(names(yspec::ys_load(out)), "AGE")
+  expect_error(
+    df_to_yspec(
+      one,
+      varname = "varname",
+      output = tempfile(fileext = ".txt")
+    )
+  )
+})

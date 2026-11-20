@@ -67,7 +67,7 @@ test_that("base ys_check failures are still reported", {
   data <- make_data(spec)
   data$EXTRA <- 1
   expect_false(suppressMessages(ysx_check(data, spec, error_on_fail = FALSE)))
-  expect_error(suppressMessages(ysx_check(data, spec)), "review messages")
+  expect_error(suppressMessages(ysx_check(data, spec)), "EXTRA")
 })
 
 test_that("NA is an error when missing_code is not NA", {
@@ -113,32 +113,51 @@ test_that("ysx_check_missing checks every data column against the spec", {
   data$SEX[1] <- "-999"
   expect_match(ysx_check_missing(data, spec), "SEX: 1 missing")
   expect_length(ysx_check_missing(data, spec), 1L)
+})
 
-  extra <- cbind(make_data(spec), EXTRA = 1)
+test_that("data columns not in the spec raise unless error_on_fail = FALSE", {
+  spec <- load_test_spec()
+  extra <- cbind(make_data(spec), EXTRA = 1, OTHER = 2)
+  expect_snapshot(error = TRUE, ysx_check_missing(extra, spec))
   expect_identical(
-    ysx_check_missing(extra, spec),
-    "EXTRA: column is not in the specification; missing values not checked"
+    ysx_check_missing(extra, spec, error_on_fail = FALSE),
+    c(
+      "EXTRA: column is not in the specification; missing values not checked",
+      "OTHER: column is not in the specification; missing values not checked"
+    )
   )
 })
 
-test_that("spec columns absent from the data raise unless error_on_fail = FALSE", {
+test_that("spec columns that are not in the data are ignored", {
   spec <- load_test_spec()
   data <- make_data(spec)[c("SEX", "CVA1")]
-  expect_snapshot(
-    error = TRUE,
-    ysx_check_missing(data, yspec::ys_select(spec, SEX, CVA1, AGE, ID))
-  )
-
+  expect_identical(ysx_check_missing(data, spec), character(0))
   expect_identical(
     ysx_check_missing(data, spec, error_on_fail = FALSE),
     character(0)
   )
   data$SEX[2] <- NA
-  expect_length(ysx_check_missing(data, spec, error_on_fail = FALSE), 2L)
-  expect_error(ysx_check_missing(data, spec), "not found in data")
+  expect_length(ysx_check_missing(data, spec), 2L)
 })
 
-test_that("ysx_check forwards error_on_fail to the missing-column check", {
+test_that("ysx_check raises for a data column that is not in the spec", {
+  spec <- load_test_spec()
+  data <- make_data(spec)
+  data$EXTRA <- 1
+  expect_error(
+    suppressMessages(ysx_check(data, spec)),
+    "Data column\\(s\\) not found in specification: EXTRA"
+  )
+  res <- suppressMessages(ysx_check(data, spec, error_on_fail = FALSE))
+  expect_false(res)
+
+  # The missing-value check alone has no problem with spec columns not in data
+  data$EXTRA <- NULL
+  data$AGE <- NULL
+  expect_identical(ysx_check_missing(data, spec), character(0))
+})
+
+test_that("ysx_check asserts that data columns and spec variables match", {
   spec <- load_test_spec()
   data <- make_data(spec)
   data$AGE <- NULL
@@ -146,20 +165,29 @@ test_that("ysx_check forwards error_on_fail to the missing-column check", {
     suppressMessages(ysx_check(data, spec)),
     "Specification column\\(s\\) not found in data: AGE"
   )
-  res <- suppressMessages(ysx_check(data, spec, error_on_fail = FALSE))
+  data$EXTRA <- 1
+  expect_error(
+    suppressMessages(ysx_check(data, spec)),
+    "Data column\\(s\\) not found in specification: EXTRA; Specification column\\(s\\) not found in data: AGE"
+  )
+  expect_message(
+    res <- ysx_check(data, spec, error_on_fail = FALSE),
+    "Specification column\\(s\\) not found in data: AGE"
+  )
   expect_false(res)
+
+  # ysx_check_missing does not assert the spec side
+  data$EXTRA <- NULL
+  expect_identical(ysx_check_missing(data, spec), character(0))
 })
 
-test_that("absent columns from a merged second spec also raise", {
+test_that("a second spec covers data columns missing from the first", {
   spec <- load_test_spec()
   data <- make_data(spec)[c("SEX", "CVA1")]
   left <- yspec::ys_select(spec, SEX)
   right <- yspec::ys_select(spec, CVA1, AGE)
-  expect_error(ysx_check_missing(data, left, right), "AGE")
-  expect_identical(
-    ysx_check_missing(data, left, right, error_on_fail = FALSE),
-    character(0)
-  )
+  expect_error(ysx_check_missing(data, left), "CVA1")
+  expect_identical(ysx_check_missing(data, left, right), character(0))
 })
 
 test_that("ysx_check_missing merges a second spec before checking", {
@@ -169,7 +197,7 @@ test_that("ysx_check_missing merges a second spec before checking", {
   right <- yspec::ys_select(spec, CVA1)
   original <- left
 
-  expect_length(ysx_check_missing(data, left), 1L)
+  expect_error(ysx_check_missing(data, left), "CVA1")
   expect_identical(ysx_check_missing(data, left, right), character(0))
   expect_identical(left, original)
 
@@ -316,17 +344,72 @@ test_that("pre_grp_count accepts yaml null and None and is validated", {
   expect_snapshot(error = TRUE, ysx_check(data, spec))
 })
 
-test_that("ysx_check forwards error_on_fail to ysx_check_repeats", {
+test_that("ysx_check asserts group columns are in the data", {
   spec <- ysx_regroup(load_test_spec(), "USUBJID")
   spec$USUBJID$dots[["pre_grp_count"]] <- NULL
   data <- make_data(spec)
   data$USUBJID <- NULL
   expect_error(
     suppressMessages(ysx_check(data, spec)),
-    "column\\(s\\) not found in data: .*USUBJID"
+    "Specification column\\(s\\) not found in data: USUBJID"
   )
   expect_error(
     suppressMessages(ysx_check(data, spec, error_on_fail = FALSE)),
     NA
   )
+})
+
+test_that("varies_within_group matches the distinct-count definition", {
+  reference <- function(x, g) {
+    any(tapply(x, g, function(v) length(unique(v))) > 1)
+  }
+  set.seed(4729)
+  g <- rep(1:40, each = 5)
+  gi <- match(g, unique(g))
+  first <- which(!duplicated(gi))
+
+  constant <- rep(rnorm(40), each = 5)
+  moving <- constant
+  moving[c(7, 100)] <- moving[c(7, 100)] + 1
+  cases <- list(
+    num_constant = constant,
+    num_varies = moving,
+    int = rep(1:40, each = 5),
+    chr = rep(letters[1:20], each = 10),
+    chr_varies = replace(rep(letters[1:20], each = 10), 33, "z"),
+    fct = factor(rep(c("a", "b"), each = 100)),
+    na_constant = replace(constant, 1:5, NA),
+    na_varies = replace(constant, 3, NA),
+    nan_vs_na = replace(replace(constant, 1:5, NA), 2, NaN),
+    all_na = rep(NA_real_, 200),
+    date = as.Date("2020-01-01") + rep(1:40, each = 5),
+    lgl = rep(c(TRUE, FALSE), each = 100),
+    list_col = I(as.list(rep(1:40, each = 5)))
+  )
+  for (nm in names(cases)) {
+    expect_identical(
+      varies_within_group(cases[[nm]], gi, first),
+      reference(cases[[nm]], g),
+      label = nm
+    )
+  }
+})
+
+test_that("the time-varying check is fast on long data", {
+  skip_on_cran()
+  n_id <- 20000
+  data <- data.frame(
+    ID = rep(seq_len(n_id), each = 10),
+    CVA = rep(seq_len(n_id), each = 10),
+    CVB = rep(seq_len(n_id), each = 10),
+    TIME = rep(1:10, n_id)
+  )
+  spec <- yspec::ys_select(load_test_spec(), USUBJID, AGE, SEX, ID)
+  names(spec) <- c("ID", "CVA", "CVB", "OTHER")
+  spec <- ysx_regroup(spec, "ID")
+  spec$CVA$col <- "CVA"
+  spec$CVB$col <- "CVB"
+  elapsed <- system.time(msgs <- check_time_varying(data, spec))[["elapsed"]]
+  expect_identical(msgs, character(0))
+  expect_lt(elapsed, 2)
 })

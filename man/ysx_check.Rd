@@ -37,8 +37,7 @@ Runs \code{\link[yspec:ys_check]{yspec::ys_check()}} and then three additional c
 \enumerate{
 \item Missing values, using \code{\link[=ysx_check_missing]{ysx_check_missing()}}. By default, columns may not
 contain missing values; set \code{na_ok: true} in a column's \code{dots} to allow
-them. With \code{error_on_fail = TRUE}, a specification column that is absent
-from \code{data} raises an error immediately; with \code{FALSE} it is ignored.
+them.
 \item Repeats within groups, using \code{\link[=ysx_check_repeats]{ysx_check_repeats()}}. By default, each
 combination of \code{group: true} columns must occur once. Set
 \verb{pre_grp_count: <n>} in the \code{dots} of the group columns to require \code{n}
@@ -49,4 +48,10 @@ columns that set it must agree. \code{error_on_fail} is forwarded.
 (default) must be constant within each group; a column with
 \code{time_varying: true} must vary within at least one group.
 }
+
+Before any check, \code{data} and \code{spec} must match: every column in \code{data} must
+be a variable in \code{spec}, and every variable in \code{spec} must be a column in
+\code{data}. With \code{error_on_fail = TRUE} a mismatch raises an error; with \code{FALSE}
+it is reported with the other problems. \code{\link[=ysx_check_missing]{ysx_check_missing()}} on its own
+only requires the data columns to be in the spec.
 }

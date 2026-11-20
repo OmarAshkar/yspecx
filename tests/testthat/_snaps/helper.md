@@ -12,5 +12,5 @@
       ys_write(spec, "spec.txt")
     Condition
       Error in `ys_write()`:
-      ! grepl("\\.yaml$", path) is not TRUE
+      ! grepl("\\.ya?ml$", path) is not TRUE
 

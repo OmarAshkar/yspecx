@@ -1,0 +1,138 @@
+---
+title: "Checking data against a specification"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Checking data against a specification}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+`ysx_check()` extends `yspec::ys_check()` with three checks that are driven by
+the `dots` of each column in the specification:
+
+| Check | `dots` setting | Default |
+|---|---|---|
+| Missing values | `na_ok` | `false`: missing values are not allowed |
+| Rows per group | `group`, `pre_grp_count` | each group occurs once |
+| Time-varying columns | `group`, `time_varying` | constant within each group |
+
+Missing values must be coded as the specification's `missing_code`
+(`SETUP__: missing_code`) when one is set.
+
+```{r setup-spec}
+library(yspecx)
+
+spec <- yspec::ys_select(ysx_load_pkpdspec(), ID, TIME, EVID, DV, CMT)
+
+data <- data.frame(
+  ID = c(1, 1, 1, 2, 2),
+  TIME = c(0, 1, 2, 0, 1),
+  EVID = c(1, 0, 0, 1, 0),
+  DV = c(-999, 5.1, 4.2, -999, 6.3),
+  CMT = c(1, 2, 2, 1, 2)
+)
+```
+
+The bundled specification marks `ID` as the group column and sets
+`pre_grp_count: ~` (null), because a NONMEM data set has many rows per subject.
+`DV` allows missing values, coded as `-999`.
+
+## Run all checks
+
+```{r check}
+ysx_check(data, spec)
+```
+
+`ysx_check()` returns `TRUE` invisibly when everything passes. If any check
+fails it prints every problem and stops. Use `error_on_fail = FALSE` to get
+`FALSE` back instead.
+
+```{r check-fail}
+bad <- data
+bad$CMT[2] <- -999
+ysx_check(bad, spec, error_on_fail = FALSE)
+```
+
+Before it runs any check, `ysx_check()` asserts that the data and the
+specification match: every column in `data` must be a variable in the
+specification, and every specification variable must be a column in `data`.
+With the default `error_on_fail = TRUE` a mismatch raises an error. With `FALSE`
+it is reported with the other problems, and `error_on_fail` is also forwarded to
+the individual checks. `ysx_check_missing()` is less strict: it only requires
+the data columns to be in the specification.
+
+## Missing values
+
+`ysx_check_missing()` runs only the missing-value check and returns the
+problems as a character vector. Every column in `data` must be described in the
+specification, otherwise it raises an error (or returns a problem with
+`error_on_fail = FALSE`). The specification may describe more columns than the
+data has.
+
+```{r missing}
+ysx_check_missing(bad, spec)
+```
+
+Missing values are not allowed by default. Allow them for a column with
+`dots: {na_ok: true}` in the YAML. If the specification has a `missing_code`,
+a plain `NA` is a problem even when `na_ok` is true.
+
+A second specification can be merged before checking with `spec2`. Columns that
+exist in both keep the definition from `spec`.
+
+```{r missing-spec2}
+ysx_check_missing(
+  data[c("ID", "DV")],
+  yspec::ys_select(spec, ID),
+  spec2 = yspec::ys_select(spec, DV)
+)
+```
+
+## Repeats within groups
+
+`ysx_check_repeats()` counts the rows in each group and stops if any group does
+not have exactly `count` rows (default 1). It is the equivalent of grouping,
+counting, and checking that no count differs from `count`. Missing values count
+as a group value.
+
+Pass the grouping columns with `groups` to avoid editing the specification. The
+columns must exist in the specification.
+
+```{r repeats-groups, error = TRUE}
+ids <- data.frame(ID = c(1, 1, 2), TIME = c(0, 0, 0))
+ysx_check_repeats(ids, spec, groups = c("ID", "TIME"))
+```
+
+With `error_on_fail = FALSE` the problems are returned instead:
+
+```{r repeats-return}
+ysx_check_repeats(ids, spec, groups = c("ID", "TIME"), error_on_fail = FALSE)
+```
+
+## Setting groups in the specification
+
+`ysx_regroup()` removes all existing `group` settings and marks new ones.
+`ysx_ungroup()` removes them all. Both return a new specification.
+
+```{r regroup}
+regrouped <- ysx_regroup(spec, c("ID", "TIME"))
+names(Filter(function(x) isTRUE(x$dots$group), regrouped))
+
+ungrouped <- ysx_ungroup(spec)
+names(Filter(function(x) isTRUE(x$dots$group), ungrouped))
+```
+
+Within `ysx_check()`, the required number of rows per group comes from
+`pre_grp_count` in the `dots` of the group columns:
+
+| `pre_grp_count` | Meaning |
+|---|---|
+| not set | every group must have 1 row |
+| a whole number `n` | every group must have `n` rows |
+| `~`, `null`, or `None` | do not check repeats |
+
+All group columns that set it must agree.

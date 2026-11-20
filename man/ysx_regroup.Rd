@@ -17,5 +17,6 @@ A yspec object with the new group columns. \code{spec} is not modified.
 \description{
 Removes every existing \code{group} setting from the \code{dots} of \code{spec}, then marks
 the columns in \code{groups} with \code{group: true}. Other \code{dots} settings are kept.
-The group columns are used by \code{\link[=ysx_check_repeats]{ysx_check_repeats()}} and \code{\link[=ysx_check]{ysx_check()}}.
+The group columns are used by \code{\link[=ysx_check_repeats]{ysx_check_repeats()}} and \code{\link[=ysx_check]{ysx_check()}}. Use
+\code{\link[=ysx_ungroup]{ysx_ungroup()}} to remove all groups.
 }

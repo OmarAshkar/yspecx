@@ -6,11 +6,15 @@ Authors@R:
 Description: 
     yspecx is an extension of yspec for validation of data specifications.
 License: GPL (>= 3)
+URL: https://omarashkar.github.io/yspecx/, https://github.com/OmarAshkar/yspecx
+BugReports: https://github.com/OmarAshkar/yspecx/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports: 
     ggplot2,
     rlang,
+    stats,
+    utils,
     yaml,
     yspec (>= 0.8.1)
 Remotes:

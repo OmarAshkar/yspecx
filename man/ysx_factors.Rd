@@ -33,5 +33,6 @@ observations do not contribute to counts unless they are an explicit level.
 \details{
 Selection, decoding, retained value columns and existing factors follow
 \code{\link[yspec:ys_factors]{yspec::ys_factors()}}. In particular, existing factors are not reordered.
-Order settings are validated only for columns being converted.
+Order settings are validated only for columns being converted. A warning is
+given when values that are not in the specification become \code{NA}.
 }

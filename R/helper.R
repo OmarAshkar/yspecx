@@ -6,12 +6,13 @@
 #' @param vardesc column specifying variable descriptions to include in the yspec file
 #' @param varunit column specifying variable units to include in the yspec file
 #' @param vartype column specifying variable types to include in the yspec file
-#' @param output name of the output yspec file
+#' @param output name of the output yspec file, ending in `.yaml` or `.yml`
 #' @param varcodelist column containing coded values (comma- or newline-separated)
 #' @param codelist_func function taking a codelist string and returning a named list of codes
 #'
 #' @importFrom yspec ys_load get_meta
 #' @importFrom yaml write_yaml
+#' @importFrom utils type.convert
 #' @author Omar I. Elashkar
 #' @export
 df_to_yspec <- function(
@@ -30,9 +31,19 @@ df_to_yspec <- function(
   stopifnot(all(
     c(varname, vardesc, varunit, vartype, varcodelist) %in% colnames(x)
   ))
-  stopifnot(grepl("\\.yaml$", output))
+  stopifnot(grepl("\\.ya?ml$", output))
   if (!is.null(varcodelist)) {
     stopifnot(is.function(codelist_func))
+  }
+  duplicated_names <- unique(x[[varname]][duplicated(x[[varname]])])
+  if (length(duplicated_names) > 0) {
+    stop(
+      "Duplicate variable names in `",
+      varname,
+      "`: ",
+      paste(duplicated_names, collapse = ", "),
+      call. = FALSE
+    )
   }
 
   # Create the YAML structure
@@ -137,14 +148,14 @@ ys_sort_spec_vars <- function(data, spec) {
 #' are preserved, but comments and YAML formatting are not.
 #'
 #' @param x A yspec object, as returned by [yspec::ys_load()].
-#' @param path Path to the output YAML file.
+#' @param path Path to the output YAML file, ending in `.yaml` or `.yml`.
 #' @importFrom yaml write_yaml
 #' @importFrom yspec get_meta
 #' @author Omar I. Elashkar
 #' @export
 ys_write <- function(x, path) {
   stopifnot(inherits(x, "yspec"))
-  stopifnot(grepl("\\.yaml$", path))
+  stopifnot(grepl("\\.ya?ml$", path))
   meta <- yspec::get_meta(x)
   setup_fields <- c(
     "description",

@@ -32,7 +32,7 @@ df_to_yspec(
 
 \item{vartype}{column specifying variable types to include in the yspec file}
 
-\item{output}{name of the output yspec file}
+\item{output}{name of the output yspec file, ending in \code{.yaml} or \code{.yml}}
 
 \item{varcodelist}{column containing coded values (comma- or newline-separated)}
 

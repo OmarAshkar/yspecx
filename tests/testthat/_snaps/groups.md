@@ -22,6 +22,14 @@
       Error:
       ! Group column(s) not found in spec: NOPE, ALSO
 
+# ysx_ungroup validates its input
+
+    Code
+      ysx_ungroup(list())
+    Condition
+      Error in `ysx_ungroup()`:
+      ! inherits(spec, "yspec") is not TRUE
+
 # ysx_check_repeats raises on repeats by default
 
     Code

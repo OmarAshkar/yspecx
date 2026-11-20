@@ -15,13 +15,18 @@ if (!nzchar(ader_file)) {
   )
 }
 
-group_cols <- function(spec) {
-  names(spec)[vapply(
-    spec,
-    function(x) isTRUE(x$dots$group),
-    logical(1)
-  )]
-}
+test_that("group_cols lists the columns with group: true, in spec order", {
+  spec <- yspec::ys_load(ader_file)
+  expect_identical(group_cols(spec), c("USUBJID", "ID"))
+  expect_identical(
+    group_cols(ysx_regroup(spec, c("SEX", "AGE"))),
+    c("AGE", "SEX")
+  )
+  expect_identical(group_cols(ysx_ungroup(spec)), character(0))
+  spec$AGE$dots$group <- NA
+  spec$SEX$dots$group <- "yes"
+  expect_identical(group_cols(spec), c("USUBJID", "ID"))
+})
 
 test_that("ysx_regroup replaces all existing group settings", {
   spec <- yspec::ys_load(ader_file)
@@ -37,22 +42,53 @@ test_that("ysx_regroup replaces all existing group settings", {
 })
 
 test_that("ysx_regroup works for columns without dots and repeated names", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   result <- ysx_regroup(spec, c("ID", "ID", "AGE"))
   expect_identical(group_cols(result), c("AGE", "ID"))
   expect_identical(group_cols(ysx_regroup(result, "WEIGHT")), "WEIGHT")
 })
 
 test_that("ysx_regroup validates its inputs", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   expect_snapshot(error = TRUE, ysx_regroup(list(), "ID"))
   expect_snapshot(error = TRUE, ysx_regroup(spec, character()))
   expect_snapshot(error = TRUE, ysx_regroup(spec, c("ID", "NOPE", "ALSO")))
 })
 
+test_that("ysx_ungroup removes all group settings and keeps other dots", {
+  spec <- yspec::ys_load(ader_file)
+  original <- spec
+
+  result <- ysx_ungroup(spec)
+
+  expect_identical(group_cols(result), character(0))
+  expect_null(result$USUBJID$dots$group)
+  expect_identical(result$AGE$dots$time_varying, FALSE)
+  expect_true("pre_grp_count" %in% names(result$USUBJID$dots))
+  expect_identical(names(result), names(spec))
+  expect_identical(yspec::get_meta(result), yspec::get_meta(spec))
+  expect_identical(spec, original)
+  expect_identical(ysx_ungroup(result), result)
+})
+
+test_that("ysx_ungroup then ysx_regroup and ysx_check_repeats", {
+  spec <- ysx_regroup(
+    yspec::ys_load(test_path("fixtures", "messy.yaml")),
+    "ID"
+  )
+  data <- data.frame(ID = c(1, 1))
+  expect_error(ysx_check_repeats(data, spec), "do not have 1")
+  expect_identical(ysx_check_repeats(data, ysx_ungroup(spec)), character(0))
+  expect_identical(group_cols(ysx_regroup(ysx_ungroup(spec), "AGE")), "AGE")
+})
+
+test_that("ysx_ungroup validates its input", {
+  expect_snapshot(error = TRUE, ysx_ungroup(list()))
+})
+
 test_that("ysx_check_repeats raises on repeats by default", {
   spec <- ysx_regroup(
-    yspec::ys_load(test_path("fixatures", "messy.yaml")),
+    yspec::ys_load(test_path("fixtures", "messy.yaml")),
     c("ID", "AGE")
   )
   data <- data.frame(ID = c(1, 1, 2), AGE = c(30, 31, 30), SEX = "F")
@@ -70,7 +106,7 @@ test_that("ysx_check_repeats raises on repeats by default", {
 })
 
 test_that("ysx_check_repeats takes groups directly without changing spec", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   original <- spec
   data <- data.frame(ID = c(1, 1, 2), AGE = c(30, 31, 30))
 
@@ -93,7 +129,7 @@ test_that("ysx_check_repeats takes groups directly without changing spec", {
 
 test_that("ysx_check_repeats treats missing values as group values", {
   spec <- ysx_regroup(
-    yspec::ys_load(test_path("fixatures", "messy.yaml")),
+    yspec::ys_load(test_path("fixtures", "messy.yaml")),
     "ID"
   )
   expect_snapshot(
@@ -108,7 +144,7 @@ test_that("ysx_check_repeats treats missing values as group values", {
 
 test_that("ysx_check_repeats handles absent and missing group columns", {
   spec <- ysx_regroup(
-    yspec::ys_load(test_path("fixatures", "messy.yaml")),
+    yspec::ys_load(test_path("fixtures", "messy.yaml")),
     c("ID", "AGE")
   )
   data <- data.frame(ID = c(1, 1))
@@ -126,7 +162,7 @@ test_that("ysx_check_repeats handles absent and missing group columns", {
     ),
     character(0)
   )
-  no_groups <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  no_groups <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   expect_identical(ysx_check_repeats(data, no_groups), character(0))
   expect_identical(
     ysx_check_repeats(data[0, , drop = FALSE], spec, error_on_fail = FALSE),
@@ -136,7 +172,7 @@ test_that("ysx_check_repeats handles absent and missing group columns", {
 
 test_that("ysx_check_repeats validates its inputs", {
   spec <- ysx_regroup(
-    yspec::ys_load(test_path("fixatures", "messy.yaml")),
+    yspec::ys_load(test_path("fixtures", "messy.yaml")),
     "ID"
   )
   data <- data.frame(ID = 1)

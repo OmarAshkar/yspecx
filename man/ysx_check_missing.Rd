@@ -15,8 +15,8 @@ ysx_check_missing(data, spec, spec2 = NULL, error_on_fail = TRUE)
 merged into \code{spec} before checking.}
 
 \item{error_on_fail}{If \code{TRUE} (default), an error is raised when a column
-in the (merged) specification does not exist in \code{data}. If \code{FALSE}, such
-columns are ignored.}
+of \code{data} is not in the (merged) specification. If \code{FALSE}, such columns
+are returned as problems instead.}
 }
 \value{
 A character vector of problems; \code{character(0)} if none are found.
@@ -30,10 +30,9 @@ spec's \code{missing_code} (\code{SETUP__: missing_code}, default \code{NA}). If
 \code{na_ok} is \code{true}.
 }
 \details{
-Every column in \code{data} must be described in \code{spec}; unmatched columns are
-reported because their missing-value rules cannot be checked. Specification
-columns absent from \code{data} raise an error unless \code{error_on_fail} is \code{FALSE},
-in which case they are ignored.
+Every column in \code{data} must be described in \code{spec}. With \code{error_on_fail = TRUE} an error lists the unmatched columns, because their missing-value
+rules cannot be checked; with \code{FALSE} they are returned as problems.
+Specification columns that are not in \code{data} are ignored.
 
 If \code{spec2} is supplied, it is merged into \code{spec} with \code{\link[yspec:ys_join]{yspec::ys_join()}}
 before checking. Columns in both specifications use the definition from

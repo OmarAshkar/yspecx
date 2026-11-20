@@ -30,3 +30,11 @@
       Error in `match.arg()`:
       ! 'arg' should be one of "long", "short"
 
+# plot_labels picks custom, then chosen field, then default label
+
+    Code
+      plot_labels("AGE", spec, list(), character(), "long")
+    Condition
+      Error:
+      ! Field 'long' is unavailable for variable 'AGE'.
+

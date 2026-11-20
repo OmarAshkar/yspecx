@@ -4,8 +4,7 @@
 #'
 #' 1. Missing values, using [ysx_check_missing()]. By default, columns may not
 #'    contain missing values; set `na_ok: true` in a column's `dots` to allow
-#'    them. With `error_on_fail = TRUE`, a specification column that is absent
-#'    from `data` raises an error immediately; with `FALSE` it is ignored.
+#'    them.
 #' 1. Repeats within groups, using [ysx_check_repeats()]. By default, each
 #'    combination of `group: true` columns must occur once. Set
 #'    `pre_grp_count: <n>` in the `dots` of the group columns to require `n`
@@ -15,6 +14,12 @@
 #'    `group: true` (default `false`). A column with `time_varying: false`
 #'    (default) must be constant within each group; a column with
 #'    `time_varying: true` must vary within at least one group.
+#'
+#' Before any check, `data` and `spec` must match: every column in `data` must
+#' be a variable in `spec`, and every variable in `spec` must be a column in
+#' `data`. With `error_on_fail = TRUE` a mismatch raises an error; with `FALSE`
+#' it is reported with the other problems. [ysx_check_missing()] on its own
+#' only requires the data columns to be in the spec.
 #'
 #' @inheritParams yspec::ys_check
 #' @return Invisibly, `TRUE` if all checks pass; otherwise an error is raised,
@@ -27,6 +32,26 @@ ysx_check <- function(
   output = tempfile(),
   error_on_fail = TRUE
 ) {
+  unmatched <- setdiff(names(data), names(spec))
+  absent <- setdiff(names(spec), names(data))
+  match_msgs <- c(
+    if (length(unmatched) > 0) {
+      paste0(
+        "Data column(s) not found in specification: ",
+        paste(unmatched, collapse = ", ")
+      )
+    },
+    if (length(absent) > 0) {
+      paste0(
+        "Specification column(s) not found in data: ",
+        paste(absent, collapse = ", ")
+      )
+    }
+  )
+  if (error_on_fail && length(match_msgs) > 0) {
+    stop(paste(match_msgs, collapse = "; "), call. = FALSE)
+  }
+
   base_ok <- yspec::ys_check(
     data,
     spec,
@@ -47,7 +72,13 @@ ysx_check <- function(
   }
 
   msgs <- c(
-    ysx_check_missing(data, spec, error_on_fail = error_on_fail),
+    match_msgs,
+    # Only matched columns: mismatches are already in match_msgs
+    ysx_check_missing(
+      data[intersect(names(data), names(spec))],
+      spec,
+      error_on_fail = FALSE
+    ),
     repeat_msgs,
     check_time_varying(data, spec)
   )
@@ -77,6 +108,15 @@ spec_dot <- function(x, name, default) {
   if (is.null(val) || length(val) != 1 || is.na(val)) default else val
 }
 
+# Names of the columns with `dots: {group: true}`
+group_cols <- function(spec) {
+  names(spec)[vapply(
+    spec,
+    function(x) isTRUE(spec_dot(x, "group", FALSE)),
+    logical(1)
+  )]
+}
+
 #' Check missing values against a specification
 #'
 #' Missing values are not allowed by default. A column may contain them only
@@ -85,10 +125,10 @@ spec_dot <- function(x, name, default) {
 #' `missing_code` is not `NA`, any `NA` in the data is an error, even when
 #' `na_ok` is `true`.
 #'
-#' Every column in `data` must be described in `spec`; unmatched columns are
-#' reported because their missing-value rules cannot be checked. Specification
-#' columns absent from `data` raise an error unless `error_on_fail` is `FALSE`,
-#' in which case they are ignored.
+#' Every column in `data` must be described in `spec`. With `error_on_fail =
+#' TRUE` an error lists the unmatched columns, because their missing-value
+#' rules cannot be checked; with `FALSE` they are returned as problems.
+#' Specification columns that are not in `data` are ignored.
 #'
 #' If `spec2` is supplied, it is merged into `spec` with [yspec::ys_join()]
 #' before checking. Columns in both specifications use the definition from
@@ -99,8 +139,8 @@ spec_dot <- function(x, name, default) {
 #' @param spec2 An optional second yspec object whose additional columns are
 #'   merged into `spec` before checking.
 #' @param error_on_fail If `TRUE` (default), an error is raised when a column
-#'   in the (merged) specification does not exist in `data`. If `FALSE`, such
-#'   columns are ignored.
+#'   of `data` is not in the (merged) specification. If `FALSE`, such columns
+#'   are returned as problems instead.
 #' @return A character vector of problems; `character(0)` if none are found.
 #'   An error is raised if a `na_ok` setting is not `true` or `false`.
 #' @export
@@ -116,11 +156,11 @@ ysx_check_missing <- function(data, spec, spec2 = NULL, error_on_fail = TRUE) {
   if (!is.null(spec2)) {
     spec <- yspec::ys_join(spec, spec2)
   }
-  absent <- setdiff(names(spec), names(data))
-  if (error_on_fail && length(absent) > 0) {
+  unmatched <- setdiff(names(data), names(spec))
+  if (error_on_fail && length(unmatched) > 0) {
     stop(
-      "Specification column(s) not found in data: ",
-      paste(absent, collapse = ", "),
+      "Data column(s) not found in specification: ",
+      paste(unmatched, collapse = ", "),
       call. = FALSE
     )
   }
@@ -131,7 +171,6 @@ ysx_check_missing <- function(data, spec, spec2 = NULL, error_on_fail = TRUE) {
   code_is_na <- is.na(code)
   out <- character(0)
 
-  unmatched <- setdiff(names(data), names(spec))
   if (length(unmatched) > 0) {
     out <- sprintf(
       "%s: column is not in the specification; missing values not checked",
@@ -177,19 +216,15 @@ ysx_check_missing <- function(data, spec, spec2 = NULL, error_on_fail = TRUE) {
 }
 
 check_time_varying <- function(data, spec) {
-  is_group <- vapply(
-    spec,
-    function(x) isTRUE(spec_dot(x, "group", FALSE)),
-    logical(1)
-  )
-  groups <- names(spec)[is_group]
-  groups <- intersect(groups, names(data))
+  groups <- intersect(group_cols(spec), names(data))
   if (length(groups) == 0) {
     return(character(0))
   }
 
   data <- as.data.frame(data)
   gid <- do.call(paste, c(unname(as.list(data[groups])), sep = "\r"))
+  gi <- match(gid, unique(gid))
+  first <- which(!duplicated(gi))
   out <- character(0)
 
   for (x in spec) {
@@ -197,9 +232,7 @@ check_time_varying <- function(data, spec) {
     if (!col %in% names(data) || col %in% groups) {
       next
     }
-    # Distinct values per group, counting missing as a value
-    n_distinct <- tapply(data[[col]], gid, function(v) length(unique(v)))
-    varies <- any(n_distinct > 1)
+    varies <- varies_within_group(data[[col]], gi, first)
     declared <- isTRUE(spec_dot(x, "time_varying", FALSE))
 
     if (!declared && varies) {
@@ -224,4 +257,21 @@ check_time_varying <- function(data, spec) {
     }
   }
   out
+}
+
+# TRUE if any group holds more than one distinct value of `x`; missing counts
+# as a value. `gi` is the group index of each row, `first` the first row of each
+# group. Comparing every row with its group's first row avoids a per-group call.
+varies_within_group <- function(x, gi, first) {
+  if (is.list(x)) {
+    return(any(tapply(x, gi, function(v) length(unique(v))) > 1))
+  }
+  f <- x[first][gi]
+  na_x <- is.na(x)
+  na_f <- is.na(f)
+  any(
+    na_x != na_f |
+      (na_x & na_f & is.nan(x) != is.nan(f)) |
+      (!na_x & !na_f & x != f)
+  )
 }

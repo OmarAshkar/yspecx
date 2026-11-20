@@ -75,8 +75,6 @@ ysx_plt_relab <- function(
     ))
   }
   stopifnot(inherits(x, "ggplot"))
-  labels <- if (is.null(spec)) list() else as.list(yspec::axis_labs(spec))
-  default_labels <- labels
   mappings <- c(
     x$mapping,
     do.call(c, lapply(unname(x$layers), \(layer) layer$mapping))
@@ -87,39 +85,7 @@ ysx_plt_relab <- function(
     names(x$facet$params$rows),
     names(x$facet$params$cols)
   ))
-  lookup_variable <- function(variable) {
-    if (variable %in% names(var_map)) unname(var_map[[variable]]) else variable
-  }
-  for (variable in used) {
-    target <- lookup_variable(variable)
-    if (variable %in% names(labs) || !target %in% names(spec)) {
-      next
-    }
-    if (!is.null(label_type)) {
-      value <- spec[[target]][[label_type]]
-      if (
-        !is.character(value) ||
-          length(value) != 1L ||
-          is.na(value) ||
-          !nzchar(trimws(value))
-      ) {
-        stop(
-          "Field '",
-          label_type,
-          "' is unavailable for variable '",
-          target,
-          "'.",
-          call. = FALSE
-        )
-      }
-      column <- spec[[target]]
-      column$axis <- value
-      labels[[variable]] <- yspec::axis_label(column)
-    } else {
-      labels[[variable]] <- default_labels[[target]]
-    }
-  }
-  labels[names(labs)] <- as.list(labs)
+  labels <- plot_labels(used, spec, labs, var_map, label_type)
   titles <- list()
   for (aesthetic in unique(names(mappings))) {
     variable <- rlang::as_label(mappings[[aesthetic]])
@@ -163,4 +129,51 @@ ysx_plt_relab <- function(
   x$facet <- ggplot2::ggproto(NULL, facet)
   x$facet$params$labeller <- strip_labeller
   x
+}
+
+# Label for each plotted variable: custom `labs` first, then the spec field
+# chosen by `label_type`, then the default axis label (name + unit). Variables
+# without a spec entry or a custom label get no entry.
+plot_labels <- function(used, spec, labs, var_map, label_type) {
+  default_labels <- if (is.null(spec)) {
+    list()
+  } else {
+    as.list(yspec::axis_labs(spec))
+  }
+  labels <- default_labels
+  for (variable in used) {
+    target <- if (variable %in% names(var_map)) {
+      unname(var_map[[variable]])
+    } else {
+      variable
+    }
+    if (variable %in% names(labs) || !target %in% names(spec)) {
+      next
+    }
+    if (is.null(label_type)) {
+      labels[[variable]] <- default_labels[[target]]
+      next
+    }
+    value <- spec[[target]][[label_type]]
+    if (
+      !is.character(value) ||
+        length(value) != 1L ||
+        is.na(value) ||
+        !nzchar(trimws(value))
+    ) {
+      stop(
+        "Field '",
+        label_type,
+        "' is unavailable for variable '",
+        target,
+        "'.",
+        call. = FALSE
+      )
+    }
+    column <- spec[[target]]
+    column$axis <- value
+    labels[[variable]] <- yspec::axis_label(column)
+  }
+  labels[names(labs)] <- as.list(labs)
+  labels
 }

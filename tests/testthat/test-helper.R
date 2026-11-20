@@ -1,5 +1,5 @@
 test_that("ys_sort_spec_vars sorts messy YAML and it can be saved and reloaded", {
-  input <- test_path("fixatures", "messy.yaml")
+  input <- test_path("fixtures", "messy.yaml")
   spec <- yspec::ys_load(input)
   data <- data.frame(ID = 1, AGE = 35, SEX = "F", WEIGHT = 65)
 
@@ -34,7 +34,7 @@ test_that("ys_sort_spec_vars sorts messy YAML and it can be saved and reloaded",
 })
 
 test_that("ys_sort_spec_vars retains unmatched variables in their original order", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   data <- data.frame(AGE = numeric(), EXTRA = numeric(), ID = numeric())
 
   expect_identical(
@@ -46,7 +46,7 @@ test_that("ys_sort_spec_vars retains unmatched variables in their original order
 })
 
 test_that("ys_write preserves setup and variable fields without changing input", {
-  input <- test_path("fixatures", "messy.yaml")
+  input <- test_path("fixtures", "messy.yaml")
   spec <- yspec::ys_load(input)
   original <- spec
   output <- tempfile(fileext = ".yaml")
@@ -65,7 +65,7 @@ test_that("ys_write preserves setup and variable fields without changing input",
 })
 
 test_that("ys_write retains unmatched variables after sorting and reloading", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   data <- data.frame(AGE = numeric(), EXTRA = numeric(), ID = numeric())
   sorted <- ys_sort_spec_vars(data, spec)
   output <- tempfile(fileext = ".yaml")
@@ -84,7 +84,7 @@ test_that("ys_write retains unmatched variables after sorting and reloading", {
 })
 
 test_that("ys_write preserves sorted input and setup fields", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   data <- data.frame(ID = numeric(), SEX = character(), AGE = numeric())
   sorted <- ys_sort_spec_vars(data, spec)
   original <- sorted
@@ -107,7 +107,10 @@ test_that("ys_write preserves sorted input and setup fields", {
 })
 
 test_that("ys_write round-trips the full example after sorting", {
-  input <- test_path("..", "..", "inst", "ext", "examples", "ADER_yspec.yml")
+  input <- system.file("ext", "examples", "ADER_yspec.yml", package = "yspecx")
+  if (!nzchar(input)) {
+    input <- test_path("..", "..", "inst", "ext", "examples", "ADER_yspec.yml")
+  }
   spec <- yspec::ys_load(input)
   data <- as.data.frame(stats::setNames(
     rep(list(numeric()), length(spec)),
@@ -141,7 +144,7 @@ test_that("ys_write round-trips the full example after sorting", {
 })
 
 test_that("ys_write preserves namespaces and materializes lookup results", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   spec$AGE$namespace <- list(
     base = list(unit = "years"),
     tex = list(unit = "yr")
@@ -162,8 +165,16 @@ test_that("ys_write preserves namespaces and materializes lookup results", {
 })
 
 test_that("ys_write rejects non-spec inputs and non-YAML paths", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
 
   expect_snapshot(error = TRUE, ys_write(list(), "spec.yaml"))
   expect_snapshot(error = TRUE, ys_write(spec, "spec.txt"))
+})
+
+test_that("ys_write accepts .yml paths", {
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
+  out <- tempfile(fileext = ".yml")
+  on.exit(unlink(out), add = TRUE)
+  ys_write(spec, out)
+  expect_identical(names(yspec::ys_load(out)), names(spec))
 })

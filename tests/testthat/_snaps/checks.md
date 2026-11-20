@@ -1,10 +1,10 @@
-# spec columns absent from the data raise unless error_on_fail = FALSE
+# data columns not in the spec raise unless error_on_fail = FALSE
 
     Code
-      ysx_check_missing(data, yspec::ys_select(spec, SEX, CVA1, AGE, ID))
+      ysx_check_missing(extra, spec)
     Condition
       Error:
-      ! Specification column(s) not found in data: AGE, ID
+      ! Data column(s) not found in specification: EXTRA, OTHER
 
 # ysx_check_missing validates inputs and na_ok settings
 

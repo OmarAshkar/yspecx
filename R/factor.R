@@ -9,7 +9,8 @@
 #'
 #' Selection, decoding, retained value columns and existing factors follow
 #' [yspec::ys_factors()]. In particular, existing factors are not reordered.
-#' Order settings are validated only for columns being converted.
+#' Order settings are validated only for columns being converted. A warning is
+#' given when values that are not in the specification become `NA`.
 #'
 #' @inheritParams yspec::ys_factors
 #' @return The data frame with selected columns converted to factors.
@@ -31,6 +32,20 @@ ysx_factors <- function(data, spec, ..., .keep_values = TRUE, .suffix = "_v") {
     logical(1)
   )]
   for (variable in converted) {
+    unknown <- is.na(result[[variable]]) & !is.na(data[[variable]])
+    if (any(unknown)) {
+      shown <- unique(as.character(data[[variable]][unknown]))
+      warning(
+        "Variable '",
+        variable,
+        "': ",
+        sum(unknown),
+        " value(s) not in the specification became NA: ",
+        paste(utils::head(shown, 5), collapse = ", "),
+        if (length(shown) > 5) ", ...",
+        call. = FALSE
+      )
+    }
     ordering <- spec[[variable]]$dots$order
     if (is.null(ordering)) {
       ordering <- "first"

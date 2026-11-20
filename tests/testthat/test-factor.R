@@ -1,5 +1,5 @@
 test_that("first and missing order settings reproduce ys_factors", {
-  spec <- yspec::ys_load(test_path("fixatures", "factor.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "factor.yaml"))
   data <- data.frame(FIRST = c(2, 2, 1, 3), DEFAULT = c(3, 2, 2, 1))
 
   expect_identical(ysx_factors(data, spec), yspec::ys_factors(data, spec))
@@ -10,7 +10,7 @@ test_that("first and missing order settings reproduce ys_factors", {
 })
 
 test_that("biggest sorts frequencies with stable ties and unused levels", {
-  spec <- yspec::ys_load(test_path("fixatures", "factor.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "factor.yaml"))
   data <- data.frame(BIGGEST = c(3, 2, 2, 3, 2, 1, NA))
   attr(data$BIGGEST, "label") <- "Original label"
   original <- data
@@ -39,7 +39,7 @@ test_that("biggest sorts frequencies with stable ties and unused levels", {
 })
 
 test_that("selection, suffixes, make_factor and existing factors follow yspec", {
-  spec <- yspec::ys_load(test_path("fixatures", "factor.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "factor.yaml"))
   data <- data.frame(
     FIRST = c(1, 2, 2),
     BIGGEST = c(1, 2, 2),
@@ -60,7 +60,7 @@ test_that("selection, suffixes, make_factor and existing factors follow yspec", 
 })
 
 test_that("invalid order settings fail only for converted columns", {
-  spec <- yspec::ys_load(test_path("fixatures", "factor.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "factor.yaml"))
   data <- data.frame(FIRST = 1, BIGGEST = 2)
   for (value in list("smallest", TRUE, NA_character_, c("first", "biggest"))) {
     spec$BIGGEST$dots$order <- value
@@ -70,4 +70,15 @@ test_that("invalid order settings fail only for converted columns", {
     ysx_factors(data, spec, FIRST),
     yspec::ys_factors(data, spec, FIRST)
   )
+})
+
+test_that("values outside the specification warn when they become NA", {
+  spec <- yspec::ys_load(test_path("fixtures", "factor.yaml"))
+  data <- data.frame(FIRST = c(1, 2, 9, 8, NA))
+  expect_snapshot(result <- ysx_factors(data, spec))
+  expect_identical(as.character(result$FIRST), c("One", "Two", NA, NA, NA))
+
+  expect_no_warning(ysx_factors(data.frame(FIRST = c(1, NA)), spec))
+  many <- data.frame(FIRST = 11:20)
+  expect_snapshot(ysx_factors(many, spec) |> invisible())
 })

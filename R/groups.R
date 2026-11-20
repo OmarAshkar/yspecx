@@ -2,7 +2,8 @@
 #'
 #' Removes every existing `group` setting from the `dots` of `spec`, then marks
 #' the columns in `groups` with `group: true`. Other `dots` settings are kept.
-#' The group columns are used by [ysx_check_repeats()] and [ysx_check()].
+#' The group columns are used by [ysx_check_repeats()] and [ysx_check()]. Use
+#' [ysx_ungroup()] to remove all groups.
 #'
 #' @param spec A loaded yspec object.
 #' @param groups A character vector naming one or more columns in `spec`.
@@ -23,13 +24,32 @@ ysx_regroup <- function(spec, groups) {
       call. = FALSE
     )
   }
+  spec <- ysx_ungroup(spec)
+  for (col in unique(groups)) {
+    spec[[col]][["dots"]][["group"]] <- TRUE
+  }
+  spec
+}
+
+#' Remove the group columns of a specification
+#'
+#' Removes every `group` setting from the `dots` of `spec`, so that no column
+#' defines groups. Other `dots` settings are kept, including `pre_grp_count`,
+#' which has no effect while there are no group columns. Use [ysx_regroup()] to
+#' set new groups.
+#'
+#' With no group columns, [ysx_check_repeats()] has nothing to check, and
+#' [ysx_check()] skips its repeat and time-varying checks.
+#'
+#' @param spec A loaded yspec object.
+#' @return A yspec object without group columns. `spec` is not modified.
+#' @export
+ysx_ungroup <- function(spec) {
+  stopifnot(inherits(spec, "yspec"))
   for (col in names(spec)) {
     if ("group" %in% names(spec[[col]][["dots"]])) {
       spec[[col]][["dots"]][["group"]] <- NULL
     }
-  }
-  for (col in unique(groups)) {
-    spec[[col]][["dots"]][["group"]] <- TRUE
   }
   spec
 }
@@ -94,12 +114,7 @@ check_repeats <- function(data, spec, count = 1, error_on_fail = TRUE) {
     length(error_on_fail) == 1L,
     !is.na(error_on_fail)
   )
-  is_group <- vapply(
-    spec,
-    function(x) isTRUE(spec_dot(x, "group", FALSE)),
-    logical(1)
-  )
-  groups <- names(spec)[is_group]
+  groups <- group_cols(spec)
   absent <- setdiff(groups, names(data))
   if (error_on_fail && length(absent) > 0) {
     stop(
@@ -134,11 +149,6 @@ check_repeats <- function(data, spec, count = 1, error_on_fail = TRUE) {
 # Not set anywhere: 1. YAML null (`~`, `null`) or the string "None": NULL,
 # meaning do not check repeats.
 repeat_count <- function(spec) {
-  is_group <- vapply(
-    spec,
-    function(x) isTRUE(spec_dot(x, "group", FALSE)),
-    logical(1)
-  )
   is_skip <- function(v) {
     is.null(v) ||
       (is.character(v) &&
@@ -146,7 +156,7 @@ repeat_count <- function(spec) {
         tolower(trimws(v)) %in% c("none", "null"))
   }
   values <- list()
-  for (col in names(spec)[is_group]) {
+  for (col in group_cols(spec)) {
     dots <- spec[[col]][["dots"]]
     if ("pre_grp_count" %in% names(dots)) {
       # list() wrapper keeps NULL; `[[<-` with NULL would drop the element

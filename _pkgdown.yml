@@ -1,0 +1,34 @@
+url: https://omarashkar.github.io/yspecx/
+
+template:
+  bootstrap: 5
+
+reference:
+  - title: Checks
+    desc: Check a data set against its specification.
+    contents:
+      - ysx_check
+      - ysx_check_missing
+      - ysx_check_repeats
+  - title: Groups
+    desc: Set or remove the columns that define groups.
+    contents:
+      - ysx_regroup
+      - ysx_ungroup
+  - title: Build and edit specifications
+    contents:
+      - df_to_yspec
+      - ys_sort_spec_vars
+      - ys_write
+      - ysx_load_pkpdspec
+  - title: Use specifications
+    contents:
+      - ysx_factors
+      - ysx_plt_relab
+
+articles:
+  - title: Articles
+    contents:
+      - checking-data
+      - building-specs
+      - factor-ordering

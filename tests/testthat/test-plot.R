@@ -1,5 +1,5 @@
 test_that("ysx_plt_relab labels axes, layer legends and decoded wrap facets", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   data <- data.frame(AGE = 35, WEIGHT = 65, SEX = "F")
   plot <- ggplot2::ggplot(data, ggplot2::aes(AGE, WEIGHT)) +
     ggplot2::geom_point(ggplot2::aes(colour = SEX)) +
@@ -20,7 +20,7 @@ test_that("ysx_plt_relab labels axes, layer legends and decoded wrap facets", {
 })
 
 test_that("custom labels override spec and work with grid facets and plot lists", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   data <- data.frame(AGE = 35, WEIGHT = 65, SEX = "F", GROUP = "A")
   plot <- ggplot2::ggplot(data, ggplot2::aes(AGE, WEIGHT)) +
     ggplot2::geom_point() +
@@ -55,7 +55,7 @@ test_that("custom-only labels and unmatched expressions are supported", {
 })
 
 test_that("variable mappings relabel axes and facets without renaming data", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   data <- data.frame(age = 35, wt = 65, sex = "F")
   plot <- ggplot2::ggplot(data, ggplot2::aes(age, wt, colour = sex)) +
     ggplot2::geom_point() +
@@ -89,7 +89,7 @@ test_that("variable mappings relabel axes and facets without renaming data", {
 })
 
 test_that("field validation applies only to used variables without overrides", {
-  spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
   spec$AGE$long <- NULL
   plot <- ggplot2::ggplot(
     data.frame(AGE = 35, WEIGHT = 65),
@@ -116,4 +116,35 @@ test_that("field validation applies only to used variables without overrides", {
   expect_snapshot(error = TRUE, ysx_plt_relab(plot, spec, label_type = "other"))
   result <- ysx_plt_relab(list(plot), spec, label_type = "short")
   expect_identical(result[[1]]$labels$x, "AGE (years)")
+})
+
+test_that("plot_labels picks custom, then chosen field, then default label", {
+  spec <- yspec::ys_load(test_path("fixtures", "messy.yaml"))
+  used <- c("AGE", "WEIGHT", "SEX", "other")
+
+  default <- plot_labels(used, spec, list(), character(), NULL)
+  expect_identical(default$AGE, "AGE (years)")
+  expect_identical(default$WEIGHT, "WEIGHT (kg)")
+  expect_null(default$other)
+
+  long <- plot_labels(used, spec, list(AGE = "Custom"), character(), "long")
+  expect_identical(long$AGE, "Custom")
+  expect_identical(long$WEIGHT, "Body weight (kg)")
+  expect_identical(long$SEX, "Sex")
+  expect_null(long$other)
+
+  mapped <- plot_labels("w", spec, list(), c(w = "WEIGHT"), "long")
+  expect_identical(mapped$w, "Body weight (kg)")
+
+  expect_identical(
+    plot_labels("x", NULL, list(x = "X"), character(), NULL),
+    list(x = "X")
+  )
+  expect_identical(plot_labels("x", NULL, list(), character(), NULL), list())
+
+  spec$AGE$long <- NULL
+  expect_snapshot(
+    error = TRUE,
+    plot_labels("AGE", spec, list(), character(), "long")
+  )
 })
