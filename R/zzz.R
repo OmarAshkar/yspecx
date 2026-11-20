@@ -9,10 +9,16 @@ extend_yspec_setup_names <- function(keys) {
   nm <- "VALID_SETUP_NAMES"
   current <- get(nm, envir = ns)
   new <- setdiff(keys, current)
-  if (length(new) == 0) return(invisible(FALSE))
+  if (length(new) == 0) {
+    return(invisible(FALSE))
+  }
   locked <- bindingIsLocked(nm, ns)
-  if (locked) unlockBinding(nm, ns)
+  if (locked) {
+    unlockBinding(nm, ns)
+  }
   assign(nm, c(current, new), envir = ns)
-  if (locked) lockBinding(nm, ns)
+  if (locked) {
+    lockBinding(nm, ns)
+  }
   invisible(TRUE)
 }

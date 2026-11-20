@@ -9,7 +9,7 @@ STUDYID:
 USUBJID:
   type: character
   long: Unique Subject Identifier
-  dots: {group: true}
+  dots: {group: true, pre_grp_count: ~}
 
 FLAGA:
   type: character

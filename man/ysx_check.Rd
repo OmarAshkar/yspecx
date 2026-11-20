@@ -31,13 +31,19 @@ Invisibly, \code{TRUE} if all checks pass; otherwise an error is raised,
 or \code{FALSE} is returned when \code{error_on_fail = FALSE}.
 }
 \description{
-Runs \code{\link[yspec:ys_check]{yspec::ys_check()}} and then two additional checks:
+Runs \code{\link[yspec:ys_check]{yspec::ys_check()}} and then three additional checks:
 }
 \details{
 \enumerate{
 \item Missing values, using \code{\link[=ysx_check_missing]{ysx_check_missing()}}. By default, columns may not
 contain missing values; set \code{na_ok: true} in a column's \code{dots} to allow
-them.
+them. With \code{error_on_fail = TRUE}, a specification column that is absent
+from \code{data} raises an error immediately; with \code{FALSE} it is ignored.
+\item Repeats within groups, using \code{\link[=ysx_check_repeats]{ysx_check_repeats()}}. By default, each
+combination of \code{group: true} columns must occur once. Set
+\verb{pre_grp_count: <n>} in the \code{dots} of the group columns to require \code{n}
+rows, or \verb{pre_grp_count: ~} (YAML null) to skip this check. All group
+columns that set it must agree. \code{error_on_fail} is forwarded.
 \item Time-varying columns. The data are grouped by all columns with
 \code{group: true} (default \code{false}). A column with \code{time_varying: false}
 (default) must be constant within each group; a column with

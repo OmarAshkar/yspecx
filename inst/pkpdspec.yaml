@@ -1,0 +1,137 @@
+SETUP__:
+  description: Standard NONMEM PK/PD data set columns
+  missing_code: -999
+
+C:
+  short: comment flag
+  long: Record comment flag; C or . marks a record to ignore
+  type: character
+  values: [".", "C"]
+  decode: ["include record", "ignore record"]
+
+NUM:
+  short: record number
+  long: Record number
+  type: numeric
+  dots: {time_varying: true}
+
+ID:
+  short: subject identifier
+  long: Unique subject identifier
+  type: numeric
+  dots: {group: true, pre_grp_count: ~}
+
+TIME:
+  short: time
+  long: Time since first record
+  type: numeric
+  unit: hr
+  dots: {time_varying: true}
+
+TAFD:
+  short: time after first dose
+  long: Time after first dose
+  type: numeric
+  unit: hr
+  dots: {time_varying: true}
+
+TAD:
+  short: time after dose
+  long: Time after most recent dose
+  type: numeric
+  unit: hr
+  dots: {time_varying: true}
+
+SEQ:
+  short: sequence
+  long: Sequence or dosing group number
+  type: numeric
+
+OCC:
+  short: occasion
+  long: Dosing occasion
+  type: numeric
+  dots: {time_varying: true}
+
+CMT:
+  short: compartment
+  long: Compartment number
+  type: numeric
+  dots: {time_varying: true}
+
+EVID:
+  short: event identifier
+  long: NONMEM event identifier
+  type: numeric
+  values:
+    observation: 0
+    dose: 1
+    other: 2
+    reset: 3
+    reset and dose: 4
+  dots: {time_varying: true}
+
+AMT:
+  short: dose amount
+  long: Dose amount
+  type: numeric
+  dots: {time_varying: true}
+
+RATE:
+  short: infusion rate
+  long: Infusion rate; 0 is bolus, -1 and -2 are modeled rate and duration
+  type: numeric
+  dots: {time_varying: true}
+
+II:
+  short: interdose interval
+  long: Interdose interval for steady-state or additional doses
+  type: numeric
+  unit: hr
+  dots: {time_varying: true}
+
+ADDL:
+  short: additional doses
+  long: Number of additional doses
+  type: numeric
+  dots: {time_varying: true}
+
+SS:
+  short: steady state
+  long: Steady-state dose indicator
+  type: numeric
+  values:
+    not steady state: 0
+    steady state: 1
+    steady state add to previous: 2
+  dots: {time_varying: true}
+
+DV:
+  short: dependent variable
+  long: Dependent variable (observed value)
+  type: numeric
+  dots: {time_varying: true, na_ok: true}
+
+MDV:
+  short: missing dependent variable
+  long: Missing dependent variable indicator
+  type: numeric
+  values:
+    DV available: 0
+    DV missing: 1
+  dots: {time_varying: true}
+
+BLQ:
+  short: below quantitation
+  long: Below limit of quantitation indicator
+  type: numeric
+  values:
+    quantifiable: 0
+    below quantitation limit: 1
+  dots: {time_varying: true}
+
+LLOQ:
+  short: lower limit of quantitation
+  long: Lower limit of quantitation
+  type: numeric
+  dots: {time_varying: true}

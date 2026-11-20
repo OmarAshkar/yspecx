@@ -5,8 +5,11 @@ export(ys_sort_spec_vars)
 export(ys_write)
 export(ysx_check)
 export(ysx_check_missing)
+export(ysx_check_repeats)
 export(ysx_factors)
+export(ysx_load_pkpdspec)
 export(ysx_plt_relab)
+export(ysx_regroup)
 importFrom(yaml,write_yaml)
 importFrom(yspec,
   get_meta,

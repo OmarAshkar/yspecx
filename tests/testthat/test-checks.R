@@ -1,6 +1,18 @@
-spec_file <- system.file("ext", "examples", "ADER_yspec.yml", package = "yspecx")
+spec_file <- system.file(
+  "ext",
+  "examples",
+  "ADER_yspec.yml",
+  package = "yspecx"
+)
 if (!nzchar(spec_file)) {
-  spec_file <- testthat::test_path("..", "..", "inst", "ext", "examples", "ADER_yspec.yml")
+  spec_file <- testthat::test_path(
+    "..",
+    "..",
+    "inst",
+    "ext",
+    "examples",
+    "ADER_yspec.yml"
+  )
 }
 
 load_test_spec <- function(file = spec_file) {
@@ -11,7 +23,9 @@ load_test_spec <- function(file = spec_file) {
 # every non-group column constant within subject.
 make_data <- function(spec, n_subj = 2, n_rec = 3) {
   groups <- names(spec)[vapply(
-    spec, function(x) isTRUE(x$dots$group), logical(1)
+    spec,
+    function(x) isTRUE(x$dots$group),
+    logical(1)
   )]
   n <- n_subj * n_rec
   subj <- rep(seq_len(n_subj), each = n_rec)
@@ -107,12 +121,71 @@ test_that("ysx_check_missing checks every data column against the spec", {
   )
 })
 
-test_that("ysx_check_missing ignores spec columns absent from the data", {
+test_that("spec columns absent from the data raise unless error_on_fail = FALSE", {
   spec <- load_test_spec()
   data <- make_data(spec)[c("SEX", "CVA1")]
-  expect_identical(ysx_check_missing(data, spec), character(0))
+  expect_snapshot(
+    error = TRUE,
+    ysx_check_missing(data, yspec::ys_select(spec, SEX, CVA1, AGE, ID))
+  )
+
+  expect_identical(
+    ysx_check_missing(data, spec, error_on_fail = FALSE),
+    character(0)
+  )
   data$SEX[2] <- NA
-  expect_length(ysx_check_missing(data, spec), 2L)
+  expect_length(ysx_check_missing(data, spec, error_on_fail = FALSE), 2L)
+  expect_error(ysx_check_missing(data, spec), "not found in data")
+})
+
+test_that("ysx_check forwards error_on_fail to the missing-column check", {
+  spec <- load_test_spec()
+  data <- make_data(spec)
+  data$AGE <- NULL
+  expect_error(
+    suppressMessages(ysx_check(data, spec)),
+    "Specification column\\(s\\) not found in data: AGE"
+  )
+  res <- suppressMessages(ysx_check(data, spec, error_on_fail = FALSE))
+  expect_false(res)
+})
+
+test_that("absent columns from a merged second spec also raise", {
+  spec <- load_test_spec()
+  data <- make_data(spec)[c("SEX", "CVA1")]
+  left <- yspec::ys_select(spec, SEX)
+  right <- yspec::ys_select(spec, CVA1, AGE)
+  expect_error(ysx_check_missing(data, left, right), "AGE")
+  expect_identical(
+    ysx_check_missing(data, left, right, error_on_fail = FALSE),
+    character(0)
+  )
+})
+
+test_that("ysx_check_missing merges a second spec before checking", {
+  spec <- load_test_spec()
+  data <- make_data(spec)[c("SEX", "CVA1")]
+  left <- yspec::ys_select(spec, SEX)
+  right <- yspec::ys_select(spec, CVA1)
+  original <- left
+
+  expect_length(ysx_check_missing(data, left), 1L)
+  expect_identical(ysx_check_missing(data, left, right), character(0))
+  expect_identical(left, original)
+
+  data$CVA1[1] <- NA
+  expect_match(ysx_check_missing(data, left, right), "CVA1: 1 .* coded NA")
+
+  # First spec wins for columns defined in both
+  right$SEX$dots$na_ok <- TRUE
+  data$SEX[1] <- "-999"
+  expect_match(
+    ysx_check_missing(data, left, right),
+    "SEX: 1 missing",
+    all = FALSE
+  )
+  left$SEX$dots$na_ok <- TRUE
+  expect_false(any(grepl("SEX", ysx_check_missing(data, left, right))))
 })
 
 test_that("ysx_check_missing validates inputs and na_ok settings", {
@@ -122,6 +195,11 @@ test_that("ysx_check_missing validates inputs and na_ok settings", {
   expect_snapshot(error = TRUE, ysx_check_missing(data, list()))
   spec$SEX$dots$na_ok <- "yes"
   expect_snapshot(error = TRUE, ysx_check_missing(data, spec))
+  expect_snapshot(error = TRUE, ysx_check_missing(data, spec, list()))
+  expect_snapshot(
+    error = TRUE,
+    ysx_check_missing(data, spec, error_on_fail = NA)
+  )
 })
 
 
@@ -182,4 +260,73 @@ test_that("group check is skipped when no group columns exist", {
   data <- make_data(spec)
   data$AGE[2] <- data$AGE[2] + 1
   expect_true(suppressMessages(ysx_check(data, spec)))
+})
+
+test_that("ysx_check requires unique groups by default", {
+  spec <- ysx_regroup(load_test_spec(), "USUBJID")
+  spec$USUBJID$dots[["pre_grp_count"]] <- NULL
+  data <- make_data(spec)
+  expect_message(
+    res <- ysx_check(data, spec, error_on_fail = FALSE),
+    "2 of 2 group\\(s\\) defined by USUBJID do not have 1 row"
+  )
+  expect_false(res)
+
+  unique_data <- data[!duplicated(data$USUBJID), ]
+  expect_true(suppressMessages(ysx_check(unique_data, spec)))
+})
+
+test_that("pre_grp_count sets the required rows and null skips the check", {
+  spec <- ysx_regroup(load_test_spec(), "USUBJID")
+  data <- make_data(spec)
+
+  spec$USUBJID$dots$pre_grp_count <- 3
+  expect_true(suppressMessages(ysx_check(data, spec)))
+  spec$USUBJID$dots$pre_grp_count <- 2
+  expect_message(
+    ysx_check(data, spec, error_on_fail = FALSE),
+    "do not have 2 row"
+  )
+
+  spec$USUBJID$dots["pre_grp_count"] <- list(NULL)
+  expect_true(suppressMessages(ysx_check(data, spec)))
+})
+
+test_that("pre_grp_count accepts yaml null and None and is validated", {
+  spec <- load_test_spec()
+  expect_null(repeat_count(spec))
+  data <- make_data(spec)
+  expect_true(suppressMessages(ysx_check(data, spec)))
+
+  spec <- ysx_regroup(spec, "USUBJID")
+  spec$USUBJID$dots[["pre_grp_count"]] <- NULL
+  expect_identical(repeat_count(spec), 1L)
+
+  spec$USUBJID$dots$pre_grp_count <- "None"
+  expect_null(repeat_count(spec))
+  expect_true(suppressMessages(ysx_check(data, spec)))
+
+  spec$USUBJID$dots$pre_grp_count <- 0
+  expect_snapshot(error = TRUE, ysx_check(data, spec))
+  spec$USUBJID$dots$pre_grp_count <- "many"
+  expect_snapshot(error = TRUE, ysx_check(data, spec))
+  spec <- ysx_regroup(spec, c("USUBJID", "ID"))
+  spec$USUBJID$dots$pre_grp_count <- 2
+  spec$ID$dots$pre_grp_count <- 3
+  expect_snapshot(error = TRUE, ysx_check(data, spec))
+})
+
+test_that("ysx_check forwards error_on_fail to ysx_check_repeats", {
+  spec <- ysx_regroup(load_test_spec(), "USUBJID")
+  spec$USUBJID$dots[["pre_grp_count"]] <- NULL
+  data <- make_data(spec)
+  data$USUBJID <- NULL
+  expect_error(
+    suppressMessages(ysx_check(data, spec)),
+    "column\\(s\\) not found in data: .*USUBJID"
+  )
+  expect_error(
+    suppressMessages(ysx_check(data, spec, error_on_fail = FALSE)),
+    NA
+  )
 })
