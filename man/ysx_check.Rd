@@ -35,10 +35,9 @@ Runs \code{\link[yspec:ys_check]{yspec::ys_check()}} and then two additional che
 }
 \details{
 \enumerate{
-\item Missing values. Missing values must be encoded as the spec's
-\code{missing_code} (\code{SETUP__: missing_code}, default \code{NA}). If \code{missing_code}
-is not \code{NA}, any \code{NA} in the data is an error. Columns with
-\code{anymissing: false} (in \code{dots}) must have no missing values at all.
+\item Missing values, using \code{\link[=ysx_check_missing]{ysx_check_missing()}}. By default, columns may not
+contain missing values; set \code{na_ok: true} in a column's \code{dots} to allow
+them.
 \item Time-varying columns. The data are grouped by all columns with
 \code{group: true} (default \code{false}). A column with \code{time_varying: false}
 (default) must be constant within each group; a column with

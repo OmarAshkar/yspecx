@@ -2,10 +2,9 @@
 #'
 #' Runs [yspec::ys_check()] and then two additional checks:
 #'
-#' 1. Missing values. Missing values must be encoded as the spec's
-#'    `missing_code` (`SETUP__: missing_code`, default `NA`). If `missing_code`
-#'    is not `NA`, any `NA` in the data is an error. Columns with
-#'    `anymissing: false` (in `dots`) must have no missing values at all.
+#' 1. Missing values, using [ysx_check_missing()]. By default, columns may not
+#'    contain missing values; set `na_ok: true` in a column's `dots` to allow
+#'    them.
 #' 1. Time-varying columns. The data are grouped by all columns with
 #'    `group: true` (default `false`). A column with `time_varying: false`
 #'    (default) must be constant within each group; a column with
@@ -22,7 +21,7 @@ ysx_check <- function(data, spec, verbose = FALSE, output = tempfile(),
     verbose = verbose, output = output, error_on_fail = FALSE
   )
 
-  msgs <- c(check_missing(data, spec), check_time_varying(data, spec))
+  msgs <- c(ysx_check_missing(data, spec), check_time_varying(data, spec))
 
   if (length(msgs) > 0) {
     msgs <- c("Additional check messages:", paste0("  - ", msgs))
@@ -43,15 +42,44 @@ spec_dot <- function(x, name, default) {
   if (is.null(val) || length(val) != 1 || is.na(val)) default else val
 }
 
-check_missing <- function(data, spec) {
+#' Check missing values against a specification
+#'
+#' Missing values are not allowed by default. A column may contain them only
+#' when its `dots` set `na_ok: true`. Missing values must be encoded as the
+#' spec's `missing_code` (`SETUP__: missing_code`, default `NA`). If
+#' `missing_code` is not `NA`, any `NA` in the data is an error, even when
+#' `na_ok` is `true`.
+#'
+#' Every column in `data` must be described in `spec`; unmatched columns are
+#' reported because their missing-value rules cannot be checked. Specification
+#' columns absent from `data` are ignored.
+#'
+#' @param data A data frame.
+#' @param spec A loaded yspec object.
+#' @return A character vector of problems; `character(0)` if none are found.
+#'   An error is raised if a `na_ok` setting is not `true` or `false`.
+#' @export
+ysx_check_missing <- function(data, spec) {
+  stopifnot(is.data.frame(data), inherits(spec, "yspec"))
   code <- yspec::get_meta(spec)[["missing_code"]]
   if (is.null(code)) code <- NA
   code_is_na <- is.na(code)
   out <- character(0)
 
-  for (x in spec) {
-    col <- x[["col"]]
-    if (!col %in% names(data)) next
+  unmatched <- setdiff(names(data), names(spec))
+  if (length(unmatched) > 0) {
+    out <- sprintf(
+      "%s: column is not in the specification; missing values not checked",
+      unmatched
+    )
+  }
+
+  for (col in intersect(names(data), names(spec))) {
+    na_ok <- spec[[col]][["dots"]][["na_ok"]]
+    if (is.null(na_ok)) na_ok <- FALSE
+    if (!is.logical(na_ok) || length(na_ok) != 1L || is.na(na_ok)) {
+      stop(col, ": dots$na_ok must be true or false.", call. = FALSE)
+    }
     y <- data[[col]]
     n_na <- sum(is.na(y))
     n_code <- if (code_is_na) 0L else sum(y == code, na.rm = TRUE)
@@ -62,9 +90,9 @@ check_missing <- function(data, spec) {
         col, n_na, format(code)
       ))
     }
-    if (!spec_dot(x, "anymissing", TRUE) && (n_na + n_code) > 0) {
+    if (!na_ok && (n_na + n_code) > 0) {
       out <- c(out, sprintf(
-        "%s: anymissing is false but %d missing value(s) found",
+        "%s: %d missing value(s) found but na_ok is not true (default)",
         col, n_na + n_code
       ))
     }

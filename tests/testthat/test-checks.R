@@ -76,16 +76,54 @@ test_that("missing_code values are accepted", {
   expect_true(suppressMessages(ysx_check(data, spec)))
 })
 
-test_that("anymissing = false rejects NA and missing_code", {
+test_that("missing values are rejected by default (na_ok is false)", {
   spec <- load_test_spec()
   data <- make_data(spec)
   data$SEX[1:3] <- "-999"
   expect_message(
     res <- ysx_check(data, spec, error_on_fail = FALSE),
-    "SEX: anymissing is false"
+    "SEX: 3 missing value\\(s\\) found but na_ok is not true"
   )
   expect_false(res)
 })
+
+test_that("ysx_check_missing checks every data column against the spec", {
+  spec <- load_test_spec()
+  data <- make_data(spec)
+  expect_identical(ysx_check_missing(data, spec), character(0))
+
+  data$CVA1[1:3] <- NA
+  expect_match(ysx_check_missing(data, spec), "CVA1: 3 .* coded NA")
+
+  data$CVA1 <- -999
+  data$SEX[1] <- "-999"
+  expect_match(ysx_check_missing(data, spec), "SEX: 1 missing")
+  expect_length(ysx_check_missing(data, spec), 1L)
+
+  extra <- cbind(make_data(spec), EXTRA = 1)
+  expect_identical(
+    ysx_check_missing(extra, spec),
+    "EXTRA: column is not in the specification; missing values not checked"
+  )
+})
+
+test_that("ysx_check_missing ignores spec columns absent from the data", {
+  spec <- load_test_spec()
+  data <- make_data(spec)[c("SEX", "CVA1")]
+  expect_identical(ysx_check_missing(data, spec), character(0))
+  data$SEX[2] <- NA
+  expect_length(ysx_check_missing(data, spec), 2L)
+})
+
+test_that("ysx_check_missing validates inputs and na_ok settings", {
+  spec <- load_test_spec()
+  data <- make_data(spec)
+  expect_snapshot(error = TRUE, ysx_check_missing(list(), spec))
+  expect_snapshot(error = TRUE, ysx_check_missing(data, list()))
+  spec$SEX$dots$na_ok <- "yes"
+  expect_snapshot(error = TRUE, ysx_check_missing(data, spec))
+})
+
 
 test_that("missing_code defaults to NA", {
   x <- readLines(spec_file, warn = FALSE)

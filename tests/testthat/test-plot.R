@@ -1,4 +1,4 @@
-test_that("ys_plt_relab labels axes, layer legends and decoded wrap facets", {
+test_that("ysx_plt_relab labels axes, layer legends and decoded wrap facets", {
   spec <- yspec::ys_load(test_path("fixatures", "messy.yaml"))
   data <- data.frame(AGE = 35, WEIGHT = 65, SEX = "F")
   plot <- ggplot2::ggplot(data, ggplot2::aes(AGE, WEIGHT)) +
@@ -6,7 +6,7 @@ test_that("ys_plt_relab labels axes, layer legends and decoded wrap facets", {
     ggplot2::facet_wrap(~SEX)
   original <- plot$facet$params$labeller
 
-  result <- ys_plt_relab(plot, spec)
+  result <- ysx_plt_relab(plot, spec)
 
   expect_identical(result$labels$x, "AGE (years)")
   expect_identical(result$labels$y, "WEIGHT (kg)")
@@ -25,7 +25,7 @@ test_that("custom labels override spec and work with grid facets and plot lists"
   plot <- ggplot2::ggplot(data, ggplot2::aes(AGE, WEIGHT)) +
     ggplot2::geom_point() +
     ggplot2::facet_grid(GROUP ~ SEX)
-  result <- ys_plt_relab(
+  result <- ysx_plt_relab(
     plot,
     spec,
     labs = list(AGE = "Age", SEX = "Sex", GROUP = "Arm"),
@@ -38,7 +38,7 @@ test_that("custom labels override spec and work with grid facets and plot lists"
     list("Arm: Active", "Sex: Woman")
   )
   expect_s3_class(ggplot2::ggplotGrob(result), "gtable")
-  expect_named(ys_plt_relab(list(first = plot), spec), "first")
+  expect_named(ysx_plt_relab(list(first = plot), spec), "first")
 })
 
 test_that("custom-only labels and unmatched expressions are supported", {
@@ -47,7 +47,7 @@ test_that("custom-only labels and unmatched expressions are supported", {
     ggplot2::aes(log(AGE), WEIGHT)
   ) +
     ggplot2::geom_point()
-  result <- ys_plt_relab(plot, labs = c(AGE = "Age", WEIGHT = "Weight"))
+  result <- ysx_plt_relab(plot, labs = c(AGE = "Age", WEIGHT = "Weight"))
 
   expect_null(result$labels$x)
   expect_identical(result$labels$y, "Weight")
@@ -60,7 +60,7 @@ test_that("variable mappings relabel axes and facets without renaming data", {
   plot <- ggplot2::ggplot(data, ggplot2::aes(age, wt, colour = sex)) +
     ggplot2::geom_point() +
     ggplot2::facet_wrap(~sex)
-  result <- ys_plt_relab(
+  result <- ysx_plt_relab(
     plot,
     spec,
     var_map = c(age = "AGE", wt = "WEIGHT", sex = "SEX"),
@@ -78,7 +78,7 @@ test_that("variable mappings relabel axes and facets without renaming data", {
   expect_identical(result$mapping, plot$mapping)
   expect_s3_class(ggplot2::ggplotGrob(result), "gtable")
   expect_identical(
-    ys_plt_relab(
+    ysx_plt_relab(
       plot,
       spec,
       var_map = c(wt = "WEIGHT"),
@@ -97,9 +97,9 @@ test_that("field validation applies only to used variables without overrides", {
   ) +
     ggplot2::geom_point()
 
-  expect_snapshot(error = TRUE, ys_plt_relab(plot, spec, label_type = "long"))
+  expect_snapshot(error = TRUE, ysx_plt_relab(plot, spec, label_type = "long"))
   expect_identical(
-    ys_plt_relab(
+    ysx_plt_relab(
       plot,
       spec,
       labs = c(AGE = "Custom age"),
@@ -108,12 +108,12 @@ test_that("field validation applies only to used variables without overrides", {
     "Custom age"
   )
   spec$AGE$long <- ""
-  expect_snapshot(error = TRUE, ys_plt_relab(plot, spec, label_type = "long"))
+  expect_snapshot(error = TRUE, ysx_plt_relab(plot, spec, label_type = "long"))
   expect_snapshot(
     error = TRUE,
-    ys_plt_relab(plot, spec, var_map = c(AGE = "UNKNOWN"))
+    ysx_plt_relab(plot, spec, var_map = c(AGE = "UNKNOWN"))
   )
-  expect_snapshot(error = TRUE, ys_plt_relab(plot, spec, label_type = "other"))
-  result <- ys_plt_relab(list(plot), spec, label_type = "short")
+  expect_snapshot(error = TRUE, ysx_plt_relab(plot, spec, label_type = "other"))
+  result <- ysx_plt_relab(list(plot), spec, label_type = "short")
   expect_identical(result[[1]]$labels$x, "AGE (years)")
 })

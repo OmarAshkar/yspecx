@@ -9,7 +9,7 @@ STUDYID:
 USUBJID:
   type: character
   long: Unique Subject Identifier
-  dots: {group: true, anymissing: false}
+  dots: {group: true}
 
 FLAGA:
   type: character
@@ -40,7 +40,7 @@ AGE:
 SEX:
   type: character
   long: Sex
-  dots: {time_varying: false, anymissing: false}
+  dots: {time_varying: false}
 
 
 RACE:
@@ -63,7 +63,7 @@ CVA1:
   type: numeric
   unit: kg
   long: Baseline Covariate A1
-  dots: {time_varying: false}
+  dots: {time_varying: false, na_ok: true}
 
 CVB1:
   type: numeric

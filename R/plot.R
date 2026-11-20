@@ -24,7 +24,7 @@
 #'   specification variable, unless a custom label overrides it.
 #' @return A relabelled plot, or a list of relabelled plots.
 #' @export
-ys_plt_relab <- function(
+ysx_plt_relab <- function(
   x,
   spec = NULL,
   labs = list(),
@@ -66,7 +66,7 @@ ys_plt_relab <- function(
   if (!inherits(x, "ggplot") && is.list(x)) {
     return(lapply(
       x,
-      ys_plt_relab,
+      ysx_plt_relab,
       spec = spec,
       labs = labs,
       facet_labels = facet_labels,
